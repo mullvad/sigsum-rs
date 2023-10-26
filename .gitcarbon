@@ -1,0 +1,8 @@
+[carbon "src/testdata/inclusion-invalid.json"]
+	sourceRepository = https://github.com/rgdd/cctv.git
+	sourcePath = merkle/testdata/inclusion-invalid.json
+	sourceRef = merkle
+[carbon "src/testdata/inclusion-valid.json"]
+	sourceRepository = https://github.com/rgdd/cctv.git
+	sourcePath = merkle/testdata/inclusion-valid.json
+	sourceRef = merkle

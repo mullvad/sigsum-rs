@@ -1,0 +1,39 @@
+[
+  {
+    "leaf_hash": "Aippeebat6pa5MPl5F9+l3ESp+Y1k4INvsHsc4ok+Tw=",
+    "leaf_index": 0,
+    "tree_size": 1,
+    "root_hash": "Aippeebat6pa5MPl5F9+l3ESp+Y1k4INvsHsc4ok+Tw=",
+    "inclusion_path": []
+  },
+  {
+    "leaf_hash": "Aippeebat6pa5MPl5F9+l3ESp+Y1k4INvsHsc4ok+Tw=",
+    "leaf_index": 0,
+    "tree_size": 2,
+    "root_hash": "sTeYX/SE+2ANuTEHx3sDZcgNePW0Kd7Q/Zc2HQd5mes=",
+    "inclusion_path": [
+      "V+s1YV1H807HFMrN9f10YIpejhAnJOgLJLKHwMJ7ajE="
+    ]
+  },
+  {
+    "leaf_hash": "V+s1YV1H807HFMrN9f10YIpejhAnJOgLJLKHwMJ7ajE=",
+    "leaf_index": 1,
+    "tree_size": 2,
+    "root_hash": "sTeYX/SE+2ANuTEHx3sDZcgNePW0Kd7Q/Zc2HQd5mes=",
+    "inclusion_path": [
+      "Aippeebat6pa5MPl5F9+l3ESp+Y1k4INvsHsc4ok+Tw="
+    ]
+  },
+  {
+    "leaf_hash": "Aippeebat6pa5MPl5F9+l3ESp+Y1k4INvsHsc4ok+Tw=",
+    "leaf_index": 0,
+    "tree_size": 10,
+    "root_hash": "X61aoZjC9sMP0iZaieElFosOH2CCZBO0W4EKIglQvSU=",
+    "inclusion_path": [
+      "V+s1YV1H807HFMrN9f10YIpejhAnJOgLJLKHwMJ7ajE=",
+      "271owyVhSnPay056h6K3tK6XJLSJ5WKe6DFR/o8Or9c=",
+      "lCw8dj8pYIlX2S0JVYnm5ftlQUw++a4m/B9J8H9eDcc=",
+      "k6jBBWXmeTmR34Cyqu3RxQSzpyvl1xghtCDcSDvLXk0="
+    ]
+  }
+]
