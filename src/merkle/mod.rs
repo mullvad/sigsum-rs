@@ -1,7 +1,12 @@
+// We want to keep the code as close as possible as the spec. So we ignore clippy warningcs.
+#![allow(clippy::all)]
+
 use sha2::{Digest, Sha256};
 
-pub type Hash = [u8; 32];
-pub type Signature = [u8; 64];
+type Hash = [u8; 32];
+
+const LEAF_HASH_PREFIX: &[u8] = &[0x00];
+const NODE_HASH_PREFIX: &[u8] = &[0x01];
 
 /// https://www.rfc-editor.org/rfc/rfc9162.html#name-merkle-inclusion-proofs
 pub fn verify_inclusion(
@@ -22,7 +27,7 @@ pub fn verify_inclusion(
             return false;
         }
         if lsb(fn_) || fn_ == sn {
-            r = Sha256::new_with_prefix([0x01])
+            r = Sha256::new_with_prefix(NODE_HASH_PREFIX)
                 .chain_update(p)
                 .chain_update(r)
                 .finalize()
@@ -37,7 +42,7 @@ pub fn verify_inclusion(
                 }
             }
         } else {
-            r = Sha256::new_with_prefix([0x01])
+            r = Sha256::new_with_prefix(NODE_HASH_PREFIX)
                 .chain_update(r)
                 .chain_update(p)
                 .finalize()
@@ -58,8 +63,7 @@ pub fn lsb(n: u64) -> bool {
 mod tests {
     use super::*;
 
-    use base64::engine::general_purpose::STANDARD;
-    use base64::engine::Engine;
+    use base64ct::{Base64, Encoding};
     use serde::Deserialize;
 
     #[derive(Debug, Deserialize)]
@@ -72,8 +76,7 @@ mod tests {
     }
 
     fn b64hash(s: &str) -> Hash {
-        STANDARD
-            .decode(s)
+        Base64::decode_vec(s)
             .expect("valid base 64")
             .try_into()
             .expect("valid hash")
@@ -124,4 +127,12 @@ mod tests {
             );
         }
     }
+}
+
+// Compute leaf hashs as defined in the RFC
+pub fn leaf_hash(leaf: impl AsRef<[u8]>) -> Hash {
+    Sha256::new_with_prefix(LEAF_HASH_PREFIX)
+        .chain_update(leaf)
+        .finalize()
+        .into()
 }

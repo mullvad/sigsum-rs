@@ -1,0 +1,11 @@
+---
+source: src/io/ascii/mod.rs
+expression: "InclusionProof::from_ascii(include_str!(\"testdata/inclusion-proof.ascii\")).unwrap()"
+---
+InclusionProof {
+    leaf_index: 2,
+    node_hashes: [
+        Hash(35fd6eb70d46d60679775c346225688e6e84c02c3c7978e5c51daf8decc22d2f),
+        Hash(11a2b46fb34efed4abbd144f8666bda8b83ee2ee6f7685062ed5cd68d616412a),
+    ],
+}
