@@ -29,11 +29,22 @@ macro_rules! bail {
 }
 
 // A K-of-n policy
+// TODO: Support the full quorum logic
 #[derive(Debug)]
 pub struct Policy {
     logs: Vec<PublicKey>,
     witnesses: Vec<PublicKey>,
     quorum: usize,
+}
+
+impl Policy {
+    pub fn new_k_of_n(logs: Vec<PublicKey>, witnesses: Vec<PublicKey>, k: usize) -> Self {
+        Self {
+            logs,
+            witnesses,
+            quorum: k,
+        }
+    }
 }
 
 ///  Verify that the given SpicySignature is a good signature for message and that it's logged
