@@ -4,7 +4,7 @@ use std::fmt;
 
 use base64ct::{Base64, Encoding};
 
-use crate::{Hash, PublicKey, Signature, SignedTreeHead, SpicySignature};
+use crate::{Hash, PublicKey, Signature, SignedTreeHead, SigsumSignature};
 
 #[derive(Debug)]
 pub struct VerifyError(pub(super) String);
@@ -30,6 +30,10 @@ macro_rules! bail {
 
 // A K-of-n policy
 // TODO: Support the full quorum logic
+/// A Sigsum policy.
+///
+/// The Sigsum policy dictates if a signed tree head is considered valid (and by extension, if a
+/// Sigsum signature is valid).
 #[derive(Debug)]
 pub struct Policy {
     logs: Vec<PublicKey>,
@@ -47,23 +51,23 @@ impl Policy {
     }
 }
 
-///  Verify that the given SpicySignature is a good signature for message and that it's logged
-///  according to policy.
+///  Verify that `signature` is a good signature for `message` from one of the `signers`, logged
+///  according to `policy`.
 pub fn verify(
     message: &Hash,
-    spicy: SpicySignature,
+    signature: SigsumSignature,
     signers: Vec<PublicKey>,
     policy: &Policy,
 ) -> Result {
     let checksum = Hash::new(message);
     verify_leaf(
         &checksum,
-        &spicy.leaf_signature,
-        &spicy.leaf_keyhash,
+        &signature.leaf_signature,
+        &signature.leaf_keyhash,
         signers,
     )?;
-    verify_sth(&spicy.log_keyhash, &spicy.sth, policy)?;
-    verify_inclusion_proof(&checksum, &spicy)?;
+    verify_sth(&signature.log_keyhash, &signature.sth, policy)?;
+    verify_inclusion_proof(&checksum, &signature)?;
     Ok(())
 }
 
@@ -147,20 +151,20 @@ fn serialize_cosigned_checkpoint(
     )
 }
 
-fn verify_inclusion_proof(checksum: &Hash, spicy: &SpicySignature) -> Result {
+fn verify_inclusion_proof(checksum: &Hash, signature: &SigsumSignature) -> Result {
     let leaf: Vec<u8> = [
         checksum.as_ref(),
-        spicy.leaf_signature.as_ref(),
-        spicy.leaf_keyhash.as_ref(),
+        signature.leaf_signature.as_ref(),
+        signature.leaf_keyhash.as_ref(),
     ]
     .concat();
     let leaf_hash = merkle::leaf_hash(leaf);
     if merkle::verify_inclusion(
         leaf_hash,
-        spicy.proof.leaf_index,
-        spicy.sth.size,
-        spicy.sth.root_hash.clone().into(),
-        spicy
+        signature.proof.leaf_index,
+        signature.sth.size,
+        signature.sth.root_hash.clone().into(),
+        signature
             .proof
             .node_hashes
             .iter()

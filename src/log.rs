@@ -3,7 +3,7 @@
 use crate::crypto::{Hash, Signature};
 
 #[derive(Debug, PartialEq)]
-/// The signed tree head, as returned by the get-tree-head endpoint.
+/// A signed tree head, as returned by the get-tree-head endpoint.
 pub struct SignedTreeHead {
     pub size: u64,
     pub root_hash: Hash,
@@ -11,6 +11,7 @@ pub struct SignedTreeHead {
     pub cosignatures: Vec<WitnessCosignature>,
 }
 
+/// A witness cosignature.
 #[derive(Debug, PartialEq)]
 pub struct WitnessCosignature {
     pub keyhash: Hash,
@@ -19,7 +20,7 @@ pub struct WitnessCosignature {
 }
 
 #[derive(Debug, PartialEq)]
-/// Inclusion proof, as returned by the get-inclusion-proof endpoint.
+/// An inclusion proof, as returned by the get-inclusion-proof endpoint.
 pub struct InclusionProof {
     pub leaf_index: u64,
     pub node_hashes: Vec<Hash>,

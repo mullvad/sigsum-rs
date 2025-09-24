@@ -7,12 +7,14 @@ const HASH_SIZE: usize = 32;
 const PUBKEY_SIZE: usize = 32;
 const SIGNATURE_SIZE: usize = 64;
 
+/// An Ed25519 public key.
 #[derive(Clone, PartialEq)]
 pub struct PublicKey {
     bytes: [u8; PUBKEY_SIZE],
 }
 
 impl PublicKey {
+    /// Verify that `sig` is a valid signature on `data` from this key.
     pub fn verify_signature(&self, data: impl AsRef<[u8]>, sig: &Signature) -> bool {
         let verifier = ed25519_dalek::VerifyingKey::from_bytes(&self.bytes).unwrap();
         let signature = ed25519_dalek::Signature::from(&sig.bytes);
@@ -20,11 +22,13 @@ impl PublicKey {
     }
 }
 
+/// An Ed25519 signature.
 #[derive(Clone, PartialEq)]
 pub struct Signature {
     bytes: [u8; SIGNATURE_SIZE],
 }
 
+/// A SHA256 digest.
 #[derive(Clone, PartialEq)]
 pub struct Hash {
     bytes: [u8; HASH_SIZE],

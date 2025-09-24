@@ -2,7 +2,7 @@
 source: src/io/ascii/mod.rs
 expression: "&actual"
 ---
-SpicySignature {
+SigsumSignature {
     log_keyhash: Hash(4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d),
     leaf_keyhash: Hash(16e8e5005d909e941b34d040b646dba5b6608e5e3353c7db860f9b8849eae245),
     leaf_signature: Signature(e82c007b640da6375657e95bd9e3768017cd9b9478dffb7496a7de69b2e8608ceb35d336b44a3b1a3b0d4493cbc694bf87daf279684473024557dd427d34d900),
