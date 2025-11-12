@@ -1,9 +1,10 @@
-use crate::merkle;
+use std::collections::HashSet;
 use std::error::Error;
 use std::fmt;
 
 use base64ct::{Base64, Encoding};
 
+use crate::merkle;
 use crate::{Hash, PublicKey, Signature, SignedTreeHead, SigsumSignature};
 
 #[derive(Debug)]
@@ -125,6 +126,10 @@ fn verify_sth(log_keyhash: &Hash, sth: &SignedTreeHead, policy: &Policy) -> Resu
     } else {
         bail!("not enough valid cosignatures");
     }
+}
+
+fn is_quorum(verified: &HashSet<Hash>, policy: &Policy, name: &str) -> bool {
+    todo!()
 }
 
 // Serialized tree head used for signing
