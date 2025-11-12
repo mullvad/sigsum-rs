@@ -8,7 +8,7 @@ const PUBKEY_SIZE: usize = 32;
 const SIGNATURE_SIZE: usize = 64;
 
 /// An Ed25519 public key.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq)]
 pub struct PublicKey {
     bytes: [u8; PUBKEY_SIZE],
 }
@@ -23,13 +23,13 @@ impl PublicKey {
 }
 
 /// An Ed25519 signature.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq)]
 pub struct Signature {
     bytes: [u8; SIGNATURE_SIZE],
 }
 
 /// A SHA256 digest.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq)]
 pub struct Hash {
     bytes: [u8; HASH_SIZE],
 }
