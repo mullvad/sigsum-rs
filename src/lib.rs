@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+#![allow(dead_code)]
 //! sigsum-rs is a Rust implementation of the Sigsum library. It currently only
 //! supports offline verification of sigsum signatures but aims to eventually
 //! include submitting and monitoring.
@@ -59,7 +61,7 @@ mod io {
 mod crypto;
 mod log;
 mod merkle;
-mod policy;
+pub mod policy;
 mod sigsumsig;
 mod verify;
 

@@ -22,6 +22,31 @@ pub struct Policy {
     quorum: Option<String>,
 }
 
+pub struct Log {
+    pub pubkey: PublicKey,
+    pub url: Option<String>,
+}
+
+pub struct Logs {}
+
+impl Iterator for Logs {
+    type Item = Log;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
+}
+
+impl Policy {
+    pub fn logs(&self) -> Logs {
+        todo!()
+    }
+
+    pub fn quorum(&self) -> Option<String> {
+        todo!()
+    }
+}
+
 // Quorum is an internal enum that represent possible quorum values, i.e. witnesses and groups.
 #[derive(Debug, Eq, PartialEq)]
 enum Quorum {
@@ -45,7 +70,7 @@ pub enum PolicyError {
 pub struct PolicyBuilder(Policy);
 
 impl PolicyBuilder {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self(Policy {
             logs: HashMap::new(),
             witnesses: HashMap::new(),
@@ -53,7 +78,7 @@ impl PolicyBuilder {
             quorum: None,
         })
     }
-    fn add_log(&mut self, key: PublicKey, url: Option<String>) -> Result<(), PolicyError> {
+    pub fn add_log(&mut self, key: PublicKey, url: Option<String>) -> Result<(), PolicyError> {
         let keyhash = Hash::new(&key);
         if self.0.logs.contains_key(&keyhash) {
             return Err(PolicyError::DuplicateLogKey(key));
@@ -62,7 +87,7 @@ impl PolicyBuilder {
         Ok(())
     }
 
-    fn add_witness(
+    pub fn add_witness(
         &mut self,
         name: String,
         key: PublicKey,
@@ -80,7 +105,7 @@ impl PolicyBuilder {
         Ok(())
     }
 
-    fn add_group(
+    pub fn add_group(
         &mut self,
         name: String,
         k: usize,
@@ -98,7 +123,7 @@ impl PolicyBuilder {
         Ok(())
     }
 
-    fn set_quorum(&mut self, name: String) -> Result<(), PolicyError> {
+    pub fn set_quorum(&mut self, name: String) -> Result<(), PolicyError> {
         if self.0.quorum.is_some() {
             return Err(PolicyError::QuorumAlreadySet);
         }
@@ -109,7 +134,7 @@ impl PolicyBuilder {
         Ok(())
     }
 
-    fn build(self) -> Policy {
+    pub fn build(self) -> Policy {
         self.0
     }
 }
