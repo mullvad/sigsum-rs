@@ -22,24 +22,54 @@ pub struct Policy {
     quorum: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct Log {
     pub pubkey: PublicKey,
     pub url: Option<String>,
 }
 
-pub struct Logs {}
+#[derive(Debug)]
+pub struct Witness {
+    pub name: String,
+    pub pubkey: PublicKey,
+    pub url: Option<String>,
+}
 
-impl Iterator for Logs {
+pub struct Logs<'a> {
+inner: std::collections::hash_map::Iter<'a, Hash, Entity>
+}
+
+impl<'a> Iterator for Logs<'a> {
     type Item = Log;
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        let (_, entity) = self.inner.next()?;
+        Some(Log{
+            pubkey: entity.0.clone(),
+            url: entity.1.clone(),
+        })
     }
 }
 
 impl Policy {
     pub fn logs(&self) -> Logs {
-        todo!()
+        Logs {inner : self.logs.iter()}
+    }
+
+    pub fn get_witness_by_keyhash(&self, keyhash: &Hash) -> Option<Witness> {
+        let entity = self.witnesses.get(keyhash)?;
+        let name = 
+            self.quorums.iter().filter_map(|(n, q)|
+                match q {
+                    Quorum::Witness(h) if h == keyhash =>  Some(n),
+                _ => None,
+                }
+            ).next().unwrap();
+        Some(Witness{
+            name: name.clone(),
+                                pubkey: entity.0.clone(),
+                                url: entity.1.clone(),
+        })
     }
 
     pub fn quorum(&self) -> Option<String> {
