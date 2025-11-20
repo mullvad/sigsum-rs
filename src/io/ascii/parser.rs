@@ -10,7 +10,7 @@ pub struct ParseAsciiError(pub(super) String);
 
 impl fmt::Display for ParseAsciiError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "parse error: {}", self.0)
+        write!(f, "{}", self.0)
     }
 }
 
@@ -94,6 +94,20 @@ impl AsciiValue for Signature {
     }
 }
 
+impl AsciiValue for [u8; 32] {
+    fn from_ascii(s: &str) -> Result<Self> {
+        let input = s.as_bytes();
+        if input.len() != 64 {
+            bail!("invalid hex length");
+        }
+        let mut bytes = [0; 32];
+        for (i, b) in bytes.iter_mut().enumerate() {
+            *b = hexbyte(input, i)?;
+        }
+        Ok(bytes)
+    }
+}
+
 impl<V0: AsciiValue, V1: AsciiValue> AsciiValue for (V0, V1) {
     fn from_ascii(s: &str) -> Result<Self> {
         let splits: Vec<&str> = s.split(' ').collect();
@@ -158,7 +172,7 @@ mod tests {
         assert_eq!(42, p.parse::<u64>("foo").unwrap());
         let mut p = Parser::new("foo=abc\n");
         assert_eq!(
-            "parse error: invalid digit found in string",
+            "invalid digit found in string",
             p.parse::<u64>("foo").unwrap_err().to_string()
         );
     }
@@ -175,7 +189,7 @@ mod tests {
             "myhash=x242424242424242424242424242424242424242424242424242424242424242\n",
         );
         assert_eq!(
-            "parse error: invalid hex character",
+            "invalid hex character",
             p.parse::<Hash>("myhash").unwrap_err().to_string()
         );
 
@@ -183,7 +197,7 @@ mod tests {
         let mut p =
             Parser::new("myhash=424242424242424242424242424242424242424242424242424242424242424\n");
         assert_eq!(
-            "parse error: invalid hex length",
+            "invalid hex length",
             p.parse::<Hash>("myhash").unwrap_err().to_string()
         );
 
@@ -192,8 +206,39 @@ mod tests {
             "myhash=424242424242424242424242424242424242424242424242424242424242424242\n",
         );
         assert_eq!(
-            "parse error: invalid hex length",
+            "invalid hex length",
             p.parse::<Hash>("myhash").unwrap_err().to_string()
+        );
+    }
+
+    #[test]
+    fn parser_parse_u8_32() {
+        let mut p =
+            Parser::new("x=4242424242424242424242424242424242424242424242424242424242424242\n");
+        assert_eq!([0x42; 32], p.parse::<[u8; 32]>("x").unwrap());
+
+        // Bad character
+        let mut p =
+            Parser::new("x=x242424242424242424242424242424242424242424242424242424242424242\n");
+        assert_eq!(
+            "invalid hex character",
+            p.parse::<[u8; 32]>("x").unwrap_err().to_string()
+        );
+
+        // Too short
+        let mut p =
+            Parser::new("x=424242424242424242424242424242424242424242424242424242424242424\n");
+        assert_eq!(
+            "invalid hex length",
+            p.parse::<[u8; 32]>("x").unwrap_err().to_string()
+        );
+
+        // Too long
+        let mut p =
+            Parser::new("x=424242424242424242424242424242424242424242424242424242424242424242\n");
+        assert_eq!(
+            "invalid hex length",
+            p.parse::<[u8; 32]>("x").unwrap_err().to_string()
         );
     }
 
@@ -210,7 +255,7 @@ mod tests {
         let mut p = Parser::new(
             "mysig=x2424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242\n");
         assert_eq!(
-            "parse error: invalid hex character",
+            "invalid hex character",
             p.parse::<Signature>("mysig").unwrap_err().to_string()
         );
 
@@ -218,7 +263,7 @@ mod tests {
         let mut p = Parser::new(
             "mysig=424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242\n");
         assert_eq!(
-            "parse error: invalid hex length",
+            "invalid hex length",
             p.parse::<Signature>("mysig").unwrap_err().to_string()
         );
 
@@ -226,7 +271,7 @@ mod tests {
         let mut p = Parser::new(
             "mysig=4242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242424242\n");
         assert_eq!(
-            "parse error: invalid hex length",
+            "invalid hex length",
             p.parse::<Signature>("mysig").unwrap_err().to_string()
         );
     }
@@ -237,7 +282,7 @@ mod tests {
         assert_eq!((42, 123), p.parse::<(u64, u64)>("mypair").unwrap());
         let mut p = Parser::new("mypair=42 123 0\n");
         assert_eq!(
-            "parse error: expected 2 values, found 3",
+            "expected 2 values, found 3",
             p.parse::<(u64, u64)>("mypair").unwrap_err().to_string()
         );
     }
@@ -251,7 +296,7 @@ mod tests {
         );
         let mut p = Parser::new("mytripple=42 123\n");
         assert_eq!(
-            "parse error: expected 3 values, found 2",
+            "expected 3 values, found 2",
             p.parse::<(u64, u64, u64)>("mytripple")
                 .unwrap_err()
                 .to_string()
@@ -262,12 +307,12 @@ mod tests {
     fn parser_parse_field_error() {
         let mut p = Parser::new("foo=42\n");
         assert_eq!(
-            "parse error: expected field bar",
+            "expected field bar",
             p.parse::<u64>("bar").unwrap_err().to_string()
         );
         let mut p = Parser::new("");
         assert_eq!(
-            "parse error: unexpected end of input",
+            "unexpected end of input",
             p.parse::<u64>("bar").unwrap_err().to_string()
         );
     }
