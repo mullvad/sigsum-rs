@@ -2,6 +2,10 @@ use std::collections::HashMap;
 
 use crate::crypto::{Hash, PublicKey};
 
+mod parsing;
+
+pub use parsing::ParsePolicyError;
+
 /// A Sigsum policy.
 ///
 /// The Sigsum policy dictates if a signed tree head is considered valid (and by extension, if a
