@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::crypto::{Hash, PublicKey};
 
+mod builtin;
 mod parsing;
 
 pub use parsing::ParsePolicyError;
