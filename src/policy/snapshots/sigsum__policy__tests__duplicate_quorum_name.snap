@@ -1,0 +1,19 @@
+---
+source: src/policy/mod.rs
+expression: builder.build()
+---
+Policy {
+    logs: {},
+    witnesses: {
+        Hash(d05a4bb520e4699e424b0f7f891746bd176fd0d581a5fdc55cb5c2cb57e3adf2): Entity(
+            PublicKey(ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24),
+            None,
+        ),
+    },
+    quorums: {
+        "foo": Witness(
+            Hash(d05a4bb520e4699e424b0f7f891746bd176fd0d581a5fdc55cb5c2cb57e3adf2),
+        ),
+    },
+    quorum: None,
+}

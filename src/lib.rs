@@ -59,6 +59,7 @@ mod io {
 mod crypto;
 mod log;
 mod merkle;
+pub mod policy;
 mod sigsumsig;
 mod verify;
 

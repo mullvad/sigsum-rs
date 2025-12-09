@@ -1,0 +1,10 @@
+---
+source: src/policy/mod.rs
+expression: builder.build()
+---
+Policy {
+    logs: {},
+    witnesses: {},
+    quorums: {},
+    quorum: None,
+}
