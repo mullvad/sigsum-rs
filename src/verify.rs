@@ -80,7 +80,6 @@ fn verify_leaf(
     for key in signers.iter() {
         if Hash::new(key) == *keyhash {
             let signed = [b"sigsum.org/v1/tree-leaf\x00".as_slice(), checksum.as_ref()].concat();
-            signed.len();
             if key.verify_signature(&signed, signature) {
                 return Ok(());
             } else {

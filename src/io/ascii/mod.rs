@@ -81,7 +81,7 @@ impl Protoleaf {
         let mut p = Parser::new(input);
         let message = p.parse("message")?;
         let signature = p.parse("signature")?;
-        let public_key = p.parse::<[u8; 32]>("public_key")?.into();
+        let public_key = p.parse("public_key")?;
         Ok(Protoleaf {
             message,
             signature,

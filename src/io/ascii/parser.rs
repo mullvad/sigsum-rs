@@ -3,7 +3,10 @@ use std::fmt;
 use std::iter::Peekable;
 use std::str::Lines;
 
-use crate::{Hash, Signature};
+use crate::{
+    crypto::{HASH_SIZE, PUBKEY_SIZE, SIGNATURE_SIZE},
+    Hash, PublicKey, Signature,
+};
 
 #[derive(Debug)]
 pub struct ParseAsciiError(pub(super) String);
@@ -68,39 +71,32 @@ impl AsciiValue for u64 {
 
 impl AsciiValue for Hash {
     fn from_ascii(s: &str) -> Result<Self> {
-        let input = s.as_bytes();
-        if input.len() != 64 {
-            bail!("invalid hex length");
-        }
-        let mut bytes = [0; 32];
-        for (i, b) in bytes.iter_mut().enumerate() {
-            *b = hexbyte(input, i)?;
-        }
+        let bytes = <[u8; HASH_SIZE]>::from_ascii(s)?;
         Ok(Hash::from(bytes))
     }
 }
 
 impl AsciiValue for Signature {
     fn from_ascii(s: &str) -> Result<Self> {
-        let input = s.as_bytes();
-        if input.len() != 128 {
-            bail!("invalid hex length");
-        }
-        let mut bytes = [0; 64];
-        for (i, b) in bytes.iter_mut().enumerate() {
-            *b = hexbyte(input, i)?;
-        }
+        let bytes = <[u8; SIGNATURE_SIZE]>::from_ascii(s)?;
         Ok(Self::from(bytes))
     }
 }
 
-impl AsciiValue for [u8; 32] {
+impl AsciiValue for PublicKey {
     fn from_ascii(s: &str) -> Result<Self> {
+        let bytes = <[u8; PUBKEY_SIZE]>::from_ascii(s)?;
+        Ok(Self::from(bytes))
+    }
+}
+
+impl<const N: usize> AsciiValue for [u8; N] {
+    fn from_ascii(s: &str) -> Result<[u8; N]> {
         let input = s.as_bytes();
-        if input.len() != 64 {
+        if input.len() != N * 2 {
             bail!("invalid hex length");
         }
-        let mut bytes = [0; 32];
+        let mut bytes = [0; N];
         for (i, b) in bytes.iter_mut().enumerate() {
             *b = hexbyte(input, i)?;
         }
@@ -120,7 +116,7 @@ impl<V0: AsciiValue, V1: AsciiValue> AsciiValue for (V0, V1) {
 
 impl<V0: AsciiValue, V1: AsciiValue, V2: AsciiValue> AsciiValue for (V0, V1, V2) {
     fn from_ascii(s: &str) -> Result<Self> {
-        let splits: Vec<&str> = s.splitn(3, ' ').collect();
+        let splits: Vec<&str> = s.split(' ').collect();
         if splits.len() != 3 {
             bail!("expected 3 values, found {}", splits.len())
         }

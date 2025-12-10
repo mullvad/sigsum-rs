@@ -3,9 +3,9 @@ use std::fmt;
 use ed25519_dalek::ed25519::signature::Verifier as _;
 use sha2::{Digest, Sha256};
 
-const HASH_SIZE: usize = 32;
-const PUBKEY_SIZE: usize = 32;
-const SIGNATURE_SIZE: usize = 64;
+pub(crate) const HASH_SIZE: usize = 32;
+pub(crate) const PUBKEY_SIZE: usize = 32;
+pub(crate) const SIGNATURE_SIZE: usize = 64;
 
 /// An Ed25519 public key.
 #[derive(Clone, Eq, Hash, PartialEq)]
