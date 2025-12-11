@@ -9,16 +9,28 @@ use crate::{
 pub use parser::ParseAsciiError;
 use parser::{Parser, Result};
 
+const LOG_FIELD: &str = "log";
+const SIZE_FIELD: &str = "size";
+const LEAF_FIELD: &str = "leaf";
+const MESSAGE_FIELD: &str = "message";
+const VERSION_FIELD: &str = "version";
+const ROOT_HASH_FIELD: &str = "root_hash";
+const SIGNATURE_FIELD: &str = "signature";
+const NODE_HASH_FIELD: &str = "node_hash";
+const LEAF_INDEX_FIELD: &str = "leaf_index";
+const PUBLIC_KEY_FIELD: &str = "public_key";
+const COSIGNATURE_FIELD: &str = "cosignature";
+
 impl SignedTreeHead {
     pub fn from_ascii(input: &str) -> Result<Self> {
         let mut p = Parser::new(input);
-        let size: u64 = p.parse("size")?;
-        let root_hash: Hash = p.parse("root_hash")?;
-        let signature: Signature = p.parse("signature")?;
+        let size: u64 = p.parse(SIZE_FIELD)?;
+        let root_hash: Hash = p.parse(ROOT_HASH_FIELD)?;
+        let signature: Signature = p.parse(SIGNATURE_FIELD)?;
         let mut cosignatures = Vec::new();
         while !p.at_end() {
             let (keyhash, timestamp, cosignature): (Hash, u64, Signature) =
-                p.parse("cosignature")?;
+                p.parse(COSIGNATURE_FIELD)?;
             cosignatures.push(WitnessCosignature {
                 keyhash,
                 timestamp,
@@ -36,13 +48,13 @@ impl SignedTreeHead {
     #[allow(unused_must_use)]
     pub fn to_ascii(&self) -> String {
         let mut ascii = String::new();
-        writeln!(ascii, "size={}", self.size);
-        writeln!(ascii, "root_hash={:x}", self.root_hash);
-        writeln!(ascii, "signature={:x}", self.signature);
+        writeln!(ascii, "{SIZE_FIELD}={}", self.size);
+        writeln!(ascii, "{ROOT_HASH_FIELD}={:x}", self.root_hash);
+        writeln!(ascii, "{SIGNATURE_FIELD}={:x}", self.signature);
         for cosig in self.cosignatures.iter() {
             writeln!(
                 ascii,
-                "cosignature={:x} {} {:x}",
+                "{COSIGNATURE_FIELD}={:x} {} {:x}",
                 cosig.keyhash, cosig.timestamp, cosig.cosignature
             );
         }
@@ -53,10 +65,10 @@ impl SignedTreeHead {
 impl InclusionProof {
     pub fn from_ascii(input: &str) -> Result<Self> {
         let mut p = Parser::new(input);
-        let leaf_index = p.parse("leaf_index")?;
+        let leaf_index = p.parse(LEAF_INDEX_FIELD)?;
         let mut node_hashes = Vec::new();
         while !p.at_end() {
-            let hash = p.parse("node_hash")?;
+            let hash = p.parse(NODE_HASH_FIELD)?;
             node_hashes.push(hash);
         }
         Ok(Self {
@@ -68,9 +80,9 @@ impl InclusionProof {
     #[allow(unused_must_use)]
     pub fn to_ascii(&self) -> String {
         let mut ascii = String::new();
-        writeln!(ascii, "leaf_index={}", self.leaf_index);
+        writeln!(ascii, "{LEAF_INDEX_FIELD}={}", self.leaf_index);
         for h in self.node_hashes.iter() {
-            writeln!(ascii, "node_hash={h:x}");
+            writeln!(ascii, "{NODE_HASH_FIELD}={h:x}");
         }
         ascii
     }
@@ -79,9 +91,9 @@ impl InclusionProof {
 impl Protoleaf {
     pub fn from_ascii(input: &str) -> Result<Self> {
         let mut p = Parser::new(input);
-        let message = p.parse("message")?;
-        let signature = p.parse("signature")?;
-        let public_key = p.parse::<[u8; 32]>("public_key")?.into();
+        let message = p.parse(MESSAGE_FIELD)?;
+        let signature = p.parse(SIGNATURE_FIELD)?;
+        let public_key = p.parse(PUBLIC_KEY_FIELD)?;
         Ok(Protoleaf {
             message,
             signature,
@@ -92,9 +104,9 @@ impl Protoleaf {
     #[allow(unused_must_use)]
     pub fn to_ascii(&self) -> String {
         let mut ascii = String::new();
-        writeln!(ascii, "message={:x}", self.message);
-        writeln!(ascii, "signature={:x}", self.signature);
-        writeln!(ascii, "public_key={:x}", self.public_key);
+        writeln!(ascii, "{MESSAGE_FIELD}={:x}", self.message);
+        writeln!(ascii, "{SIGNATURE_FIELD}={:x}", self.signature);
+        writeln!(ascii, "{PUBLIC_KEY_FIELD}={:x}", self.public_key);
         ascii
     }
 }
@@ -109,12 +121,12 @@ impl SigsumSignature {
             )));
         }
         let mut p = Parser::new(parts[0]);
-        let version: u64 = p.parse("version")?;
+        let version: u64 = p.parse(VERSION_FIELD)?;
         if version != 2 {
             return Err(ParseAsciiError(format!("version {version} not supported")));
         }
-        let log_keyhash = p.parse("log")?;
-        let (leaf_keyhash, leaf_signature) = p.parse("leaf")?;
+        let log_keyhash = p.parse(LOG_FIELD)?;
+        let (leaf_keyhash, leaf_signature) = p.parse(LEAF_FIELD)?;
         if !p.at_end() {
             return Err(ParseAsciiError(
                 "expected an empty line after 'leaf'".into(),
@@ -134,28 +146,28 @@ impl SigsumSignature {
     #[allow(unused_must_use)]
     pub fn to_ascii(&self) -> String {
         let mut ascii = String::new();
-        writeln!(ascii, "version=2");
-        writeln!(ascii, "log={:x}", self.log_keyhash);
+        writeln!(ascii, "{VERSION_FIELD}=2");
+        writeln!(ascii, "{LOG_FIELD}={:x}", self.log_keyhash);
         writeln!(
             ascii,
-            "leaf={:x} {:x}",
+            "{LEAF_FIELD}={:x} {:x}",
             self.leaf_keyhash, self.leaf_signature
         );
         writeln!(ascii);
-        writeln!(ascii, "size={}", self.sth.size);
-        writeln!(ascii, "root_hash={:x}", self.sth.root_hash);
-        writeln!(ascii, "signature={:x}", self.sth.signature);
+        writeln!(ascii, "{SIZE_FIELD}={}", self.sth.size);
+        writeln!(ascii, "{ROOT_HASH_FIELD}={:x}", self.sth.root_hash);
+        writeln!(ascii, "{SIGNATURE_FIELD}={:x}", self.sth.signature);
         for cosig in self.sth.cosignatures.iter() {
             writeln!(
                 ascii,
-                "cosignature={:x} {} {:x}",
+                "{COSIGNATURE_FIELD}={:x} {} {:x}",
                 cosig.keyhash, cosig.timestamp, cosig.cosignature
             );
         }
         writeln!(ascii);
-        writeln!(ascii, "leaf_index={}", self.proof.leaf_index);
+        writeln!(ascii, "{LEAF_INDEX_FIELD}={}", self.proof.leaf_index);
         for h in self.proof.node_hashes.iter() {
-            writeln!(ascii, "node_hash={h:x}");
+            writeln!(ascii, "{NODE_HASH_FIELD}={h:x}");
         }
         ascii
     }
