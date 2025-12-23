@@ -30,6 +30,7 @@ impl Policy {
 fn parse_policy(data: &str) -> Result<Policy> {
     let mut builder = PolicyBuilder::new();
     let lines = PolicyLines::new(data);
+    let mut quorum_set = false;
     for (lineno, tokens) in lines {
         match tokens[..] {
             ["log", ..] => {
@@ -80,6 +81,10 @@ fn parse_policy(data: &str) -> Result<Policy> {
                 }
             }
             ["quorum", name] => {
+                if quorum_set {
+                    bail!(lineno, "quorum already set");
+                }
+                quorum_set = true;
                 if name != "none" {
                     if let Err(err) = builder.set_quorum(name.into()) {
                         bail!(lineno, "invalid quorum rule: {err}");
@@ -90,6 +95,9 @@ fn parse_policy(data: &str) -> Result<Policy> {
             [unknown, ..] => bail!(lineno, "unknown keyword `{unknown}`"),
             [] => unreachable!("PolicyLines skips empty lines"),
         }
+    }
+    if !quorum_set {
+        bail!(data.lines().count(), "no quorum set");
     }
     Ok(builder.build())
 }
@@ -202,9 +210,7 @@ mod tests {
 
     #[test]
     fn parse_policy_empty() {
-        let expected = PolicyBuilder::new().build();
-        let actual = parse_policy("").unwrap();
-        assert_eq!(expected, actual);
+        insta::assert_snapshot!(parse_policy("").unwrap_err(), @"line 0: no quorum set")
     }
 
     #[test]
@@ -357,7 +363,7 @@ mod tests {
                 quorum WIT-1\n\
                 quorum WIT-2\n\
             ").unwrap_err(),
-            @"line 4: invalid quorum rule: quorum already set",
+            @"line 4: quorum already set",
         );
     }
 
