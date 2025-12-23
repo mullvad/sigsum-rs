@@ -81,8 +81,8 @@ impl Policy {
         })
     }
 
-    /// Checks whether a set of signatures by all `keyhashes` would satisfy the quorum of this
-    /// policy.
+    /// satisfies_quorum_policy checks whether a set of signatures by all keys corresponding to`keyhashes`
+    /// would satisfy the quorum of this policy.
     /// This function does not check that those keyhashes actually signed anything.
     pub fn satisfies_quorum_policy(&self, keyhashes: &[Hash]) -> bool {
         match &self.quorum {
@@ -150,6 +150,7 @@ pub enum PolicyError {
     QuorumAlreadySet,
 }
 
+#[derive(Debug)]
 pub struct PolicyBuilder(Policy);
 
 impl Default for PolicyBuilder {
@@ -167,13 +168,13 @@ impl PolicyBuilder {
             quorum: None,
         })
     }
-    pub fn add_log(&mut self, key: PublicKey, url: Option<String>) -> Result<(), PolicyError> {
+    pub fn add_log(&mut self, key: PublicKey, url: Option<String>) -> Result<&mut Self, PolicyError> {
         let keyhash = Hash::new(&key);
         if self.0.logs.contains_key(&keyhash) {
             return Err(PolicyError::DuplicateLogKey(key));
         }
         self.0.logs.insert(keyhash, Entity(key, url));
-        Ok(())
+        Ok(self)
     }
 
     pub fn add_witness(
@@ -181,7 +182,7 @@ impl PolicyBuilder {
         name: String,
         key: PublicKey,
         url: Option<String>,
-    ) -> Result<(), PolicyError> {
+    ) -> Result<&mut Self, PolicyError> {
         let keyhash = Hash::new(&key);
         if self.0.witnesses.contains_key(&keyhash) {
             return Err(PolicyError::DuplicateWitnessKey(key));
@@ -191,7 +192,7 @@ impl PolicyBuilder {
         }
         self.0.witnesses.insert(keyhash.clone(), Entity(key, url));
         self.0.quorums.insert(name, Quorum::Witness(keyhash));
-        Ok(())
+        Ok(self)
     }
 
     pub fn add_group(
@@ -199,7 +200,7 @@ impl PolicyBuilder {
         name: String,
         k: usize,
         members: Vec<String>,
-    ) -> Result<(), PolicyError> {
+    ) -> Result<&mut Self, PolicyError> {
         if self.0.quorums.contains_key(&name) {
             return Err(PolicyError::DuplicateName(name));
         }
@@ -209,10 +210,10 @@ impl PolicyBuilder {
             }
         }
         self.0.quorums.insert(name, Quorum::Group { k, members });
-        Ok(())
+        Ok(self)
     }
 
-    pub fn set_quorum(&mut self, name: String) -> Result<(), PolicyError> {
+    pub fn set_quorum(&mut self, name: String) -> Result<&mut Self, PolicyError> {
         if self.0.quorum.is_some() {
             return Err(PolicyError::QuorumAlreadySet);
         }
@@ -220,7 +221,7 @@ impl PolicyBuilder {
             return Err(PolicyError::UnknownName(name));
         }
         self.0.quorum = Some(name);
-        Ok(())
+        Ok(self)
     }
 
     pub fn build(self) -> Policy {
@@ -354,8 +355,8 @@ mod tests {
             hex!("ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
         let mut builder = PolicyBuilder::new();
         builder.add_log(key.clone(), None).unwrap();
-        let res = builder.add_log(key.clone(), Some("https://example.org".into()));
-        assert_eq!(Err(PolicyError::DuplicateLogKey(key)), res);
+        let res = builder.add_log(key.clone(), Some("https://example.org".into())).unwrap_err();
+        assert_eq!(PolicyError::DuplicateLogKey(key), res);
         insta::assert_debug_snapshot!(builder.build());
     }
 
@@ -371,8 +372,8 @@ mod tests {
             "mywitness2".into(),
             key.clone(),
             Some("https://example.com".into()),
-        );
-        assert_eq!(Err(PolicyError::DuplicateWitnessKey(key)), res);
+        ).unwrap_err();
+        assert_eq!(PolicyError::DuplicateWitnessKey(key), res);
         insta::assert_debug_snapshot!(builder.build());
     }
 
@@ -386,11 +387,11 @@ mod tests {
         let mut builder = PolicyBuilder::new();
         builder.add_witness(name.clone(), key1, None).unwrap();
 
-        let res1 = builder.add_group(name.clone(), 1, vec!["foo".into()]);
-        assert_eq!(Err(PolicyError::DuplicateName(name.clone())), res1);
+        let res1 = builder.add_group(name.clone(), 1, vec!["foo".into()]).unwrap_err();
+        assert_eq!(PolicyError::DuplicateName(name.clone()), res1);
 
-        let res2 = builder.add_witness(name.clone(), key2, None);
-        assert_eq!(Err(PolicyError::DuplicateName(name)), res2);
+        let res2 = builder.add_witness(name.clone(), key2, None).unwrap_err();
+        assert_eq!(PolicyError::DuplicateName(name), res2);
 
         insta::assert_debug_snapshot!(builder.build());
     }
@@ -398,16 +399,16 @@ mod tests {
     #[test]
     fn uplicate_unknown_member_name() {
         let mut builder = PolicyBuilder::new();
-        let res = builder.add_group("mygroup".into(), 1, vec!["mywitness".into()]);
-        assert_eq!(Err(PolicyError::UnknownName("mywitness".into())), res);
+        let res = builder.add_group("mygroup".into(), 1, vec!["mywitness".into()]).unwrap_err();
+        assert_eq!(PolicyError::UnknownName("mywitness".into()), res);
         insta::assert_debug_snapshot!(builder.build());
     }
 
     #[test]
     fn unknown_quorum_name() {
         let mut builder = PolicyBuilder::new();
-        let res = builder.set_quorum("mywitness".into());
-        assert_eq!(Err(PolicyError::UnknownName("mywitness".into())), res);
+        let res = builder.set_quorum("mywitness".into()).unwrap_err();
+        assert_eq!(PolicyError::UnknownName("mywitness".into()), res);
         insta::assert_debug_snapshot!(builder.build());
     }
 
@@ -425,8 +426,104 @@ mod tests {
             .add_witness("mywitness2".into(), key2, None)
             .unwrap();
         builder.set_quorum("mywitness1".into()).unwrap();
-        let res = builder.set_quorum("mywitness2".into());
-        assert_eq!(Err(PolicyError::QuorumAlreadySet), res);
+        let res = builder.set_quorum("mywitness2".into()).unwrap_err();
+        assert_eq!(PolicyError::QuorumAlreadySet, res);
         assert_eq!(Some("mywitness1".into()), builder.build().quorum);
     }
+
+    #[test]
+    fn witness_quorum_satisfied() {
+        let key1: PublicKey =
+            hex!("ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
+        let mut builder = PolicyBuilder::new();
+        builder
+            .add_witness("mywitness1".into(), key1.clone(), None).unwrap()
+            .set_quorum("mywitness1".into()).unwrap();
+        let policy = builder.build();
+
+        assert!(policy.satisfies_quorum_policy(&[Hash::new(key1)]));
+    }
+
+    #[test]
+    fn one_of_two_quorum_satisfied() {
+        let key1: PublicKey =
+            hex!("ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
+        let key2: PublicKey =
+            hex!("d9440882ae2bd57076d4da2e7a12d4b26e137d56116419a69f8d6969709ed747").into();
+        let mut builder = PolicyBuilder::new();
+        builder
+            .add_witness("mywitness1".into(), key1.clone(), None)
+            .unwrap()
+            .add_witness("mywitness2".into(), key2, None)
+            .unwrap()
+            .add_group(String::from("myquorum"), 1, vec!["mywitness1".to_string(), "mywitness2".to_string()]).unwrap()
+            .set_quorum("myquorum".into()).unwrap();
+        let policy = builder.build();
+
+        assert!(policy.satisfies_quorum_policy(&[Hash::new(key1)]));
+    }
+
+    #[test]
+    fn complex_quorum_satisfied() {
+        let key1: PublicKey =
+            hex!("ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
+        let key2: PublicKey =
+            hex!("d9440882ae2bd57076d4da2e7a12d4b26e137d56116419a69f8d6969709ed747").into();
+        let key3: PublicKey =
+            hex!("ac5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
+        let key4: PublicKey =
+            hex!("b9440882ae2bd57076d4da2e7a12d4b26e137d56116419a69f8d6969709ed747").into();
+        let key5: PublicKey =
+            hex!("aa5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
+        let key6: PublicKey =
+            hex!("bc440882ae2bd57076d4da2e7a12d4b26e137d56116419a69f8d6969709ed747").into();
+        let key7: PublicKey =
+            hex!("bc440882ae2bd57076d4da2e7a12d4b26e137d56116419a69f8d6969709ed74a").into();
+
+        let mut builder = PolicyBuilder::new();
+
+        builder
+            .add_witness("mywitness1".into(), key1.clone(), None)
+            .unwrap()
+            .add_witness("mywitness2".into(), key2.clone(), None)
+            .unwrap()
+            .add_group(String::from("group1"), 1, vec!["mywitness1".to_string(), "mywitness2".to_string()]).unwrap();
+
+        builder
+            .add_witness("mywitness3".into(), key3.clone(), None)
+            .unwrap()
+            .add_witness("mywitness4".into(), key4.clone(), None)
+            .unwrap()
+            .add_group(String::from("group2"), 2, vec!["mywitness3".to_string(), "mywitness4".to_string()]).unwrap();
+
+        builder
+            .add_witness("mywitness5".into(), key5.clone(), None)
+            .unwrap()
+            .add_witness("mywitness6".into(), key6.clone(), None)
+            .unwrap()
+            .add_witness("mywitness7".into(), key7.clone(), None)
+            .unwrap()
+            .add_group(String::from("group3"), 2, vec!["mywitness5".to_string(), "mywitness6".to_string(), "mywitness7".to_string()]).unwrap();
+
+        builder
+            .add_group(String::from("finalgroup"), 2, vec!["group1".to_string(), "group2".to_string(), "group3".to_string()]).unwrap()
+            .set_quorum(String::from("finalgroup")).unwrap();
+
+        let policy = builder.build();
+
+        assert!(policy.satisfies_quorum_policy(&[Hash::new(&key1), Hash::new(&key3), Hash::new(&key4)]));
+
+        assert!(!policy.satisfies_quorum_policy(&[Hash::new(&key1), Hash::new(&key3), Hash::new(&key5)]));
+
+        assert!(policy.satisfies_quorum_policy(&[Hash::new(&key1), Hash::new(&key3), Hash::new(&key5), Hash::new(&key6)]));
+
+        assert!(!policy.satisfies_quorum_policy(&[Hash::new(&key3), Hash::new(&key4)]));
+
+        assert!(policy.satisfies_quorum_policy(&[Hash::new(&key3), Hash::new(&key4), Hash::new(&key5), Hash::new(&key7)]));
+
+        assert!(policy.satisfies_quorum_policy(&[Hash::new(&key1), Hash::new(&key3), Hash::new(&key4), Hash::new(&key7), Hash::new(&key5)]));
+
+        assert!(!policy.satisfies_quorum_policy(&[Hash::new(&key3), Hash::new(&key4), Hash::new(&key6)]));
+    }
+
 }
