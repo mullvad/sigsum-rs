@@ -168,7 +168,11 @@ impl PolicyBuilder {
             quorum: None,
         })
     }
-    pub fn add_log(&mut self, key: PublicKey, url: Option<String>) -> Result<&mut Self, PolicyError> {
+    pub fn add_log(
+        &mut self,
+        key: PublicKey,
+        url: Option<String>,
+    ) -> Result<&mut Self, PolicyError> {
         let keyhash = Hash::new(&key);
         if self.0.logs.contains_key(&keyhash) {
             return Err(PolicyError::DuplicateLogKey(key));
@@ -355,7 +359,9 @@ mod tests {
             hex!("ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
         let mut builder = PolicyBuilder::new();
         builder.add_log(key.clone(), None).unwrap();
-        let res = builder.add_log(key.clone(), Some("https://example.org".into())).unwrap_err();
+        let res = builder
+            .add_log(key.clone(), Some("https://example.org".into()))
+            .unwrap_err();
         assert_eq!(PolicyError::DuplicateLogKey(key), res);
         insta::assert_debug_snapshot!(builder.build());
     }
@@ -368,11 +374,13 @@ mod tests {
         builder
             .add_witness("mywitness1".into(), key.clone(), None)
             .unwrap();
-        let res = builder.add_witness(
-            "mywitness2".into(),
-            key.clone(),
-            Some("https://example.com".into()),
-        ).unwrap_err();
+        let res = builder
+            .add_witness(
+                "mywitness2".into(),
+                key.clone(),
+                Some("https://example.com".into()),
+            )
+            .unwrap_err();
         assert_eq!(PolicyError::DuplicateWitnessKey(key), res);
         insta::assert_debug_snapshot!(builder.build());
     }
@@ -387,7 +395,9 @@ mod tests {
         let mut builder = PolicyBuilder::new();
         builder.add_witness(name.clone(), key1, None).unwrap();
 
-        let res1 = builder.add_group(name.clone(), 1, vec!["foo".into()]).unwrap_err();
+        let res1 = builder
+            .add_group(name.clone(), 1, vec!["foo".into()])
+            .unwrap_err();
         assert_eq!(PolicyError::DuplicateName(name.clone()), res1);
 
         let res2 = builder.add_witness(name.clone(), key2, None).unwrap_err();
@@ -399,7 +409,9 @@ mod tests {
     #[test]
     fn uplicate_unknown_member_name() {
         let mut builder = PolicyBuilder::new();
-        let res = builder.add_group("mygroup".into(), 1, vec!["mywitness".into()]).unwrap_err();
+        let res = builder
+            .add_group("mygroup".into(), 1, vec!["mywitness".into()])
+            .unwrap_err();
         assert_eq!(PolicyError::UnknownName("mywitness".into()), res);
         insta::assert_debug_snapshot!(builder.build());
     }
@@ -437,8 +449,10 @@ mod tests {
             hex!("ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
         let mut builder = PolicyBuilder::new();
         builder
-            .add_witness("mywitness1".into(), key1.clone(), None).unwrap()
-            .set_quorum("mywitness1".into()).unwrap();
+            .add_witness("mywitness1".into(), key1.clone(), None)
+            .unwrap()
+            .set_quorum("mywitness1".into())
+            .unwrap();
         let policy = builder.build();
 
         assert!(policy.satisfies_quorum_policy(&[Hash::new(key1)]));
@@ -456,8 +470,14 @@ mod tests {
             .unwrap()
             .add_witness("mywitness2".into(), key2, None)
             .unwrap()
-            .add_group(String::from("myquorum"), 1, vec!["mywitness1".to_string(), "mywitness2".to_string()]).unwrap()
-            .set_quorum("myquorum".into()).unwrap();
+            .add_group(
+                String::from("myquorum"),
+                1,
+                vec!["mywitness1".to_string(), "mywitness2".to_string()],
+            )
+            .unwrap()
+            .set_quorum("myquorum".into())
+            .unwrap();
         let policy = builder.build();
 
         assert!(policy.satisfies_quorum_policy(&[Hash::new(key1)]));
@@ -487,14 +507,24 @@ mod tests {
             .unwrap()
             .add_witness("mywitness2".into(), key2.clone(), None)
             .unwrap()
-            .add_group(String::from("group1"), 1, vec!["mywitness1".to_string(), "mywitness2".to_string()]).unwrap();
+            .add_group(
+                String::from("group1"),
+                1,
+                vec!["mywitness1".to_string(), "mywitness2".to_string()],
+            )
+            .unwrap();
 
         builder
             .add_witness("mywitness3".into(), key3.clone(), None)
             .unwrap()
             .add_witness("mywitness4".into(), key4.clone(), None)
             .unwrap()
-            .add_group(String::from("group2"), 2, vec!["mywitness3".to_string(), "mywitness4".to_string()]).unwrap();
+            .add_group(
+                String::from("group2"),
+                2,
+                vec!["mywitness3".to_string(), "mywitness4".to_string()],
+            )
+            .unwrap();
 
         builder
             .add_witness("mywitness5".into(), key5.clone(), None)
@@ -503,27 +533,73 @@ mod tests {
             .unwrap()
             .add_witness("mywitness7".into(), key7.clone(), None)
             .unwrap()
-            .add_group(String::from("group3"), 2, vec!["mywitness5".to_string(), "mywitness6".to_string(), "mywitness7".to_string()]).unwrap();
+            .add_group(
+                String::from("group3"),
+                2,
+                vec![
+                    "mywitness5".to_string(),
+                    "mywitness6".to_string(),
+                    "mywitness7".to_string(),
+                ],
+            )
+            .unwrap();
 
         builder
-            .add_group(String::from("finalgroup"), 2, vec!["group1".to_string(), "group2".to_string(), "group3".to_string()]).unwrap()
-            .set_quorum(String::from("finalgroup")).unwrap();
+            .add_group(
+                String::from("finalgroup"),
+                2,
+                vec![
+                    "group1".to_string(),
+                    "group2".to_string(),
+                    "group3".to_string(),
+                ],
+            )
+            .unwrap()
+            .set_quorum(String::from("finalgroup"))
+            .unwrap();
 
         let policy = builder.build();
 
-        assert!(policy.satisfies_quorum_policy(&[Hash::new(&key1), Hash::new(&key3), Hash::new(&key4)]));
+        assert!(policy.satisfies_quorum_policy(&[
+            Hash::new(&key1),
+            Hash::new(&key3),
+            Hash::new(&key4)
+        ]));
 
-        assert!(!policy.satisfies_quorum_policy(&[Hash::new(&key1), Hash::new(&key3), Hash::new(&key5)]));
+        assert!(!policy.satisfies_quorum_policy(&[
+            Hash::new(&key1),
+            Hash::new(&key3),
+            Hash::new(&key5)
+        ]));
 
-        assert!(policy.satisfies_quorum_policy(&[Hash::new(&key1), Hash::new(&key3), Hash::new(&key5), Hash::new(&key6)]));
+        assert!(policy.satisfies_quorum_policy(&[
+            Hash::new(&key1),
+            Hash::new(&key3),
+            Hash::new(&key5),
+            Hash::new(&key6)
+        ]));
 
         assert!(!policy.satisfies_quorum_policy(&[Hash::new(&key3), Hash::new(&key4)]));
 
-        assert!(policy.satisfies_quorum_policy(&[Hash::new(&key3), Hash::new(&key4), Hash::new(&key5), Hash::new(&key7)]));
+        assert!(policy.satisfies_quorum_policy(&[
+            Hash::new(&key3),
+            Hash::new(&key4),
+            Hash::new(&key5),
+            Hash::new(&key7)
+        ]));
 
-        assert!(policy.satisfies_quorum_policy(&[Hash::new(&key1), Hash::new(&key3), Hash::new(&key4), Hash::new(&key7), Hash::new(&key5)]));
+        assert!(policy.satisfies_quorum_policy(&[
+            Hash::new(&key1),
+            Hash::new(&key3),
+            Hash::new(&key4),
+            Hash::new(&key7),
+            Hash::new(&key5)
+        ]));
 
-        assert!(!policy.satisfies_quorum_policy(&[Hash::new(&key3), Hash::new(&key4), Hash::new(&key6)]));
+        assert!(!policy.satisfies_quorum_policy(&[
+            Hash::new(&key3),
+            Hash::new(&key4),
+            Hash::new(&key6)
+        ]));
     }
-
 }
