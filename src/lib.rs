@@ -13,17 +13,20 @@
 //! # Usage
 //!
 //! ```rust
-//! use sigsum::{verify, Hash, Policy, PublicKey, SigsumSignature};
+//! # use std::error::Error;
+//! use sigsum::{verify, Hash, PolicyBuilder, PublicKey, SigsumSignature};
 //! use hex_literal::hex;
 //!
 //! let data = b"Hello, Sigsum!";
 //! let signers: Vec<PublicKey> =
 //!     vec![hex!("8a9b8b9f45a826b541c1477861a458c7b30ef1cc9600c515d593c4e2f72f375e").into()];
-//! let policy = Policy::new_k_of_n(
-//!     vec![hex!("4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6").into()],
-//!     vec![hex!("4a921b7caef58ae670cdc11ef4184f1c058f7b9259a9107a969f69fa54aa496f").into()],
-//!     1,
-//! );
+//! let mut policy = PolicyBuilder::new();
+//! policy
+//!     .add_log(hex!("4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6").into(), None)?
+//!     .add_witness(String::from("mywitness"), hex!("4a921b7caef58ae670cdc11ef4184f1c058f7b9259a9107a969f69fa54aa496f").into(), None)?
+//!     .set_quorum(String::from("mywitness"))?;
+//! let policy = policy
+//!     .build();
 //! let signature = SigsumSignature::from_ascii("version=2
 //! log=4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d
 //! leaf=2ca612aaa355c19a0cc7ebaacb04723b97e873df4dbadd0f97a2e00a13d8f76a 1a5fcc2b05fb6ca66dbc7e62bcc7934fb0ebf49bba501c285222550a67e590fa3237b338ba59d2327800788b85ff9e80ea88c71157519974c70d10c825e65401
@@ -43,7 +46,7 @@
 //! node_hash=e8bb977d7ae35a4b7e591ded5e3d7fad0afee0b958d6309a52f48fe46c679c36
 //! ")?;
 //! assert!(verify(&Hash::new(data), signature, signers, &policy).is_ok());
-//! # Ok::<(), sigsum::ParseAsciiError>(())
+//! # Ok::<(), Box<dyn Error>>(())
 //! ```
 //!
 //! # Contributing
@@ -66,5 +69,6 @@ mod verify;
 pub use crypto::{Hash, PublicKey, Signature};
 pub use io::ascii::ParseAsciiError;
 pub use log::{InclusionProof, Leaf, Protoleaf, SignedTreeHead, WitnessCosignature};
+pub use policy::{Policy, PolicyBuilder};
 pub use sigsumsig::SigsumSignature;
-pub use verify::{verify, Policy};
+pub use verify::verify;

@@ -1,4 +1,5 @@
 use crate::merkle;
+use crate::policy::Policy;
 use std::error::Error;
 use std::fmt;
 
@@ -26,29 +27,6 @@ macro_rules! bail {
     ($fmt:expr, $($arg:tt)*) => {
         return Err(VerifyError(format!($fmt, $($arg)*)))
     };
-}
-
-// A K-of-n policy
-// TODO: Support the full quorum logic
-/// A Sigsum policy.
-///
-/// The Sigsum policy dictates if a signed tree head is considered valid (and by extension, if a
-/// Sigsum signature is valid).
-#[derive(Debug)]
-pub struct Policy {
-    logs: Vec<PublicKey>,
-    witnesses: Vec<PublicKey>,
-    quorum: usize,
-}
-
-impl Policy {
-    pub fn new_k_of_n(logs: Vec<PublicKey>, witnesses: Vec<PublicKey>, k: usize) -> Self {
-        Self {
-            logs,
-            witnesses,
-            quorum: k,
-        }
-    }
 }
 
 ///  Verify that `signature` is a good signature for `message` from one of the `signers`, logged
@@ -91,35 +69,43 @@ fn verify_leaf(
 }
 
 fn verify_sth(log_keyhash: &Hash, sth: &SignedTreeHead, policy: &Policy) -> Result {
-    let Some(log_key) = policy.logs.iter().find(|k| Hash::new(k) == *log_keyhash) else {
+    let Some(log_key) = policy.logs().find_map(|k| {
+        if Hash::new(&k.pubkey) == *log_keyhash {
+            Some(k.pubkey)
+        } else {
+            None
+        }
+    }) else {
         bail!("unknown log keyhash");
     };
-    let msg = serialize_tree_head(&Hash::new(log_key), sth.size, &sth.root_hash);
+
+    let msg = serialize_tree_head(&Hash::new(&log_key), sth.size, &sth.root_hash);
     if !log_key.verify_signature(msg.as_bytes(), &sth.signature) {
         bail!("bad log signature");
     }
-    let mut valid_cosignatures = 0;
+
+    let mut valid_cosignatures = vec![];
     for cosig in sth.cosignatures.iter() {
-        let Some(witness_key) = policy
-            .witnesses
-            .iter()
-            .find(|k| Hash::new(k) == cosig.keyhash)
-        else {
+        let Some(witness) = policy.get_witness_by_keyhash(&cosig.keyhash) else {
             // We don't know about this witness, that's ok and we just move on.
             continue;
         };
         let msg = serialize_cosigned_checkpoint(
             cosig.timestamp,
-            &Hash::new(log_key),
+            &Hash::new(&log_key),
             sth.size,
             &sth.root_hash,
         );
-        if !witness_key.verify_signature(msg.as_bytes(), &cosig.cosignature) {
-            bail!("bad witness cosignature from {:x}", witness_key)
+        if !witness
+            .pubkey
+            .verify_signature(msg.as_bytes(), &cosig.cosignature)
+        {
+            bail!("bad witness cosignature from {:x}", witness.pubkey)
         }
-        valid_cosignatures += 1;
+        valid_cosignatures.push(Hash::new(witness.pubkey));
     }
-    if valid_cosignatures >= policy.quorum {
+
+    if policy.check_quorum(&valid_cosignatures) {
         Ok(())
     } else {
         bail!("not enough valid cosignatures");
