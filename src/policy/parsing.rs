@@ -20,6 +20,8 @@ macro_rules! bail {
 type Result<T> = std::result::Result<T, ParsePolicyError>;
 
 impl Policy {
+    /// Parse a policy from its string representation according to the
+    /// [sigsum-go spec](https://git.glasklar.is/sigsum/core/sigsum-go/-/blob/main/doc/policy.md).
     pub fn parse(data: &str) -> Result<Policy> {
         parse_policy(data)
     }
@@ -85,7 +87,8 @@ fn parse_policy(data: &str) -> Result<Policy> {
                 }
             }
             ["quorum", ..] => bail!(lineno, "invalid quorum rule: expected exactly one argument"),
-            _ => todo!(),
+            [unknown, ..] => bail!(lineno, "unknown keyword `{unknown}`"),
+            [] => unreachable!("PolicyLines skips empty lines"),
         }
     }
     Ok(builder.build())
@@ -356,5 +359,10 @@ mod tests {
             ").unwrap_err(),
             @"line 4: invalid quorum rule: quorum already set",
         );
+    }
+
+    #[test]
+    fn parse_policy_unknown_keyword() {
+        insta::assert_snapshot!(parse_policy("foo bar").unwrap_err(), @"line 1: unknown keyword `foo`")
     }
 }
