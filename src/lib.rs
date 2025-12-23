@@ -66,5 +66,6 @@ mod verify;
 pub use crypto::{Hash, PublicKey, Signature};
 pub use io::ascii::ParseAsciiError;
 pub use log::{InclusionProof, Leaf, Protoleaf, SignedTreeHead, WitnessCosignature};
+pub use policy::Policy;
 pub use sigsumsig::SigsumSignature;
-pub use verify::{verify, Policy};
+pub use verify::verify;

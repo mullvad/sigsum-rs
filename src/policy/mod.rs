@@ -80,6 +80,38 @@ impl Policy {
             url: entity.1.clone(),
         })
     }
+
+    /// Checks whether a set of signatures by all `keyhashes` would satisfy the quorum of this
+    /// policy.
+    /// This function does not check that those keyhashes actually signed anything.
+    pub fn satisfies_quorum_policy(&self, keyhashes: &[Hash]) -> bool {
+        match &self.quorum {
+            None => true,
+            Some(quorum_name) => {
+                let root_quorum = self
+                    .quorums
+                    .get(quorum_name)
+                    .expect("invariant violation: `quorum` must be in qourums");
+                self.valid(keyhashes, root_quorum)
+            }
+        }
+    }
+
+    fn valid(&self, keyhashes: &[Hash], quorum: &Quorum) -> bool {
+        match quorum {
+            Quorum::Witness(hash) => keyhashes.contains(hash),
+            Quorum::Group { k, members } => {
+                let mut nb_valid = 0;
+                for member in members {
+                    let member = self.quorums.get(member).expect("invariant violation: group members of groups found in `quorums` must be in `quorums`");
+                    if self.valid(keyhashes, member) {
+                        nb_valid += 1;
+                    }
+                }
+                nb_valid >= *k
+            }
+        }
+    }
 }
 
 // Quorum is an internal enum that represent possible quorum values, i.e. witnesses and groups.
