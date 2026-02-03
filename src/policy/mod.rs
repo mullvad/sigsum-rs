@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use crate::crypto::{Hash, PublicKey};
 
 mod builtin;
+pub use builtin::*;
+
 mod parsing;
 
 pub use parsing::ParsePolicyError;
@@ -11,6 +13,9 @@ pub use parsing::ParsePolicyError;
 ///
 /// The Sigsum policy dictates if a signed tree head is considered valid (and by extension, if a
 /// Sigsum signature is valid).
+///
+/// This library contains a bunch of built-in policies. They can be accessed as statics
+/// in this module, or looked up at runtime via [`Policy::builtin`].
 #[derive(Debug, Eq, PartialEq)]
 pub struct Policy {
     // logs keeps the list of log keys and URLs indexed by keyhash.
@@ -57,6 +62,14 @@ impl<'a> Iterator for Logs<'a> {
 }
 
 impl Policy {
+    /// Returns a built-in policy by name, if one exists.
+    ///
+    /// All built-in policies are also exposed as statics directly in the
+    /// [`policy`](crate::policy) module.
+    pub fn builtin(name: &str) -> Option<&'static Self> {
+        builtin::builtin(name)
+    }
+
     pub fn logs(&self) -> Logs<'_> {
         Logs {
             inner: self.logs.iter(),
