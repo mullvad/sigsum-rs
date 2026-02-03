@@ -71,4 +71,4 @@ pub use io::ascii::ParseAsciiError;
 pub use log::{InclusionProof, Leaf, Protoleaf, SignedTreeHead, WitnessCosignature};
 pub use policy::{Policy, PolicyBuilder};
 pub use sigsumsig::SigsumSignature;
-pub use verify::verify;
+pub use verify::{verify, VerifyError};
