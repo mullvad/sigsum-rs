@@ -1,3 +1,77 @@
+//! # Trust policies for tree-head verification.
+//!
+//! A [`Policy`] specifies of a set of logs, a set of witnesses, and what quorum of
+//! witness cosignatures is required for a signed tree head to be considered valid.
+//!
+//! For more details about sigsum policies and the policy file syntax, see the
+//! [sigsum-go policy documentation](https://git.glasklar.is/sigsum/core/sigsum-go/-/blob/main/doc/policy.md).
+//!
+//! ## Creating a Policy
+//!
+//! This module offers three ways to create a [`Policy`]:
+//!
+//! ### Built-in Policies
+//!
+//! The crate includes several built-in policies that can be used directly. They are
+//! available as statics in this module, or can be looked up by name at runtime:
+//!
+//! ```
+//! use sigsum::policy::{Policy, SIGSUM_GENERIC_2025_1};
+//!
+//! // Use the static directly
+//! let policy = &SIGSUM_GENERIC_2025_1;
+//!
+//! // Or look up by name at runtime
+//! let policy = Policy::builtin("sigsum-generic-2025-1").unwrap();
+//! ```
+//!
+//! For more information about built-in policies, see
+//! [named policies for Sigsum](https://www.glasklarteknik.se/post/named-policies-for-sigsum/)
+//! and [procedure for maintenance of Sigsum builtin named trust policies](https://git.glasklar.is/sigsum/project/documentation/-/blob/main/policy-maintenance.md).
+//!
+//! ### Parsing a Policy File
+//!
+//! Policies can be parsed from their text representation using [`Policy::parse`]:
+//!
+//! ```
+//! use sigsum::policy::Policy;
+//!
+//! let policy_text = "\
+//! log 4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6 https://log.example.org
+//! witness mywitness 4a921b7caef58ae670cdc11ef4184f1c058f7b9259a9107a969f69fa54aa496f
+//! quorum mywitness
+//! ";
+//!
+//! let policy = Policy::parse(policy_text).unwrap();
+//! ```
+//!
+//! ### Using PolicyBuilder
+//!
+//! For programmatic construction, use [`PolicyBuilder`]:
+//!
+//! ```
+//! use sigsum::policy::PolicyBuilder;
+//! use hex_literal::hex;
+//!
+//! let mut builder = PolicyBuilder::new();
+//! builder
+//!     .add_log(
+//!         hex!("4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6").into(),
+//!         Some("https://log.example.org".into()),
+//!     )
+//!     .unwrap()
+//!     .add_witness(
+//!         "mywitness".into(),
+//!         hex!("4a921b7caef58ae670cdc11ef4184f1c058f7b9259a9107a969f69fa54aa496f").into(),
+//!         None,
+//!     )
+//!     .unwrap()
+//!     .set_quorum("mywitness".into())
+//!     .unwrap();
+//!
+//! let policy = builder.build();
+//! ```
+
 use std::collections::HashMap;
 
 use crate::crypto::{Hash, PublicKey};
