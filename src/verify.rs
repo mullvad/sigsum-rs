@@ -33,8 +33,8 @@ macro_rules! bail {
 ///  according to `policy`.
 pub fn verify(
     message: &Hash,
-    signature: SigsumSignature,
-    signers: Vec<PublicKey>,
+    signature: &SigsumSignature,
+    signers: &[PublicKey],
     policy: &Policy,
 ) -> Result {
     let checksum = Hash::new(message);
@@ -45,7 +45,7 @@ pub fn verify(
         signers,
     )?;
     verify_sth(&signature.log_keyhash, &signature.sth, policy)?;
-    verify_inclusion_proof(&checksum, &signature)?;
+    verify_inclusion_proof(&checksum, signature)?;
     Ok(())
 }
 
@@ -53,7 +53,7 @@ fn verify_leaf(
     checksum: &Hash,
     signature: &Signature,
     keyhash: &Hash,
-    signers: Vec<PublicKey>,
+    signers: &[PublicKey],
 ) -> Result {
     for key in signers.iter() {
         if Hash::new(key) == *keyhash {

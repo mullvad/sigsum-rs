@@ -49,7 +49,7 @@
 //! node_hash=e1c7a90c09949c263807e5970aef47f9a06164b759995ab814aff94aff9dcd00
 //! ")?;
 //!
-//! verify(&Hash::new(data), signature, signers, &sigsum::policy::SIGSUM_TEST_2025_3)?;
+//! verify(&Hash::new(data), &signature, &signers, &sigsum::policy::SIGSUM_TEST_2025_3)?;
 //! # Ok::<(), Box<dyn Error>>(())
 //! ```
 //!
