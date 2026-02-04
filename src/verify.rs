@@ -34,7 +34,7 @@ macro_rules! bail {
 pub fn verify(
     message: &Hash,
     signature: &SigsumSignature,
-    signers: Vec<PublicKey>,
+    signers: &[PublicKey],
     policy: &Policy,
 ) -> Result {
     let checksum = Hash::new(message);
@@ -53,7 +53,7 @@ fn verify_leaf(
     checksum: &Hash,
     signature: &Signature,
     keyhash: &Hash,
-    signers: Vec<PublicKey>,
+    signers: &[PublicKey],
 ) -> Result {
     for key in signers.iter() {
         if Hash::new(key) == *keyhash {
