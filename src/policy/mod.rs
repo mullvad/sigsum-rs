@@ -159,7 +159,7 @@ pub enum PolicyError {
     #[error("duplicate name")]
     DuplicateName(String),
 
-    #[error("{0}: no sutch witness")]
+    #[error("{0}: no such witness")]
     UnknownName(String),
 
     #[error("quorum already set")]
