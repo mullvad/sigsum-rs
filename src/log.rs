@@ -2,8 +2,8 @@
 
 use crate::crypto::{Hash, PublicKey, Signature};
 
-#[derive(Debug, Clone, PartialEq)]
 /// A signed tree head, as returned by the get-tree-head endpoint.
+#[derive(Debug, Clone, PartialEq)]
 pub struct SignedTreeHead {
     pub size: u64,
     pub root_hash: Hash,
@@ -19,23 +19,23 @@ pub struct WitnessCosignature {
     pub cosignature: Signature,
 }
 
-#[derive(Debug, Clone, PartialEq)]
 /// An inclusion proof, as returned by the get-inclusion-proof endpoint.
+#[derive(Debug, Clone, PartialEq)]
 pub struct InclusionProof {
     pub leaf_index: u64,
     pub node_hashes: Vec<Hash>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
 /// A protoleaf, which is the data submitted to the add-leaf endpoint of a Sigsum log.
+#[derive(Debug, Clone, PartialEq)]
 pub struct Protoleaf {
     pub message: Hash,
     pub signature: Signature,
     pub public_key: PublicKey,
 }
 
-#[derive(Debug, Clone, PartialEq)]
 /// A tree leaf, as stored in a sigsum log.
+#[derive(Debug, Clone, PartialEq)]
 pub struct Leaf {
     pub digest: Hash,
     pub signature: Signature,
