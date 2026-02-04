@@ -15,6 +15,10 @@ pub struct PublicKey {
 
 impl PublicKey {
     /// Verify that `sig` is a valid signature on `data` from this key.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the public key bytes are not a valid Ed25519 public key.
     pub fn verify_signature(&self, data: impl AsRef<[u8]>, sig: &Signature) -> bool {
         let verifier = ed25519_dalek::VerifyingKey::from_bytes(&self.bytes).unwrap();
         let signature = ed25519_dalek::Signature::from(&sig.bytes);

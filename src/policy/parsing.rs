@@ -350,7 +350,7 @@ mod tests {
         );
         insta::assert_snapshot!(
             parse_policy("quorum foo").unwrap_err(),
-            @"line 1: invalid quorum rule: foo: no sutch witness",
+            @"line 1: invalid quorum rule: foo: no such witness",
         );
     }
 
