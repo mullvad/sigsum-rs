@@ -45,7 +45,7 @@
 //! node_hash=ca6768bb0e267f5c339e639f02101c73be12efd5dd0462959677a86e22bbb58d
 //! node_hash=e8bb977d7ae35a4b7e591ded5e3d7fad0afee0b958d6309a52f48fe46c679c36
 //! ")?;
-//! assert!(verify(&Hash::new(data), signature, signers, &policy).is_ok());
+//! assert!(verify(&Hash::new(data), &signature, signers, &policy).is_ok());
 //! # Ok::<(), Box<dyn Error>>(())
 //! ```
 //!

@@ -33,7 +33,7 @@ macro_rules! bail {
 ///  according to `policy`.
 pub fn verify(
     message: &Hash,
-    signature: SigsumSignature,
+    signature: &SigsumSignature,
     signers: Vec<PublicKey>,
     policy: &Policy,
 ) -> Result {
@@ -45,7 +45,7 @@ pub fn verify(
         signers,
     )?;
     verify_sth(&signature.log_keyhash, &signature.sth, policy)?;
-    verify_inclusion_proof(&checksum, &signature)?;
+    verify_inclusion_proof(&checksum, signature)?;
     Ok(())
 }
 
