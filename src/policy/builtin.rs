@@ -41,10 +41,18 @@ impl Deref for BuiltInPolicy {
 
 macro_rules! define_builtin_policies {
     ($(
-        $const_name:ident = $policy_name:literal
+        $const_name:ident = $policy_name:literal -- $description:literal
     ),* $(,)?) => {
         // Define the static constants
         $(
+            #[doc = $description]
+            #[doc = "```text"]
+            #[doc = include_str!(concat!(
+                        "../../builtin-policies/",
+                        $policy_name,
+                        ".builtin-policy"
+                    ))]
+            #[doc = "```"]
             pub static $const_name: BuiltInPolicy = BuiltInPolicy {
                 name: $policy_name,
                 policy: LazyLock::new(|| {
@@ -87,8 +95,8 @@ macro_rules! define_builtin_policies {
 // All built-in policies defined here in one single place.
 // Multiple invocations not possible since this invocation emits the `builtin` lookup function.
 define_builtin_policies! {
-    SIGSUM_TEST1_2025 = "sigsum-test1-2025",
-    SIGSUM_TEST2_2025 = "sigsum-test2-2025",
-    SIGSUM_TEST_2025_3 = "sigsum-test-2025-3",
-    SIGSUM_GENERIC_2025_1 = "sigsum-generic-2025-1",
+    SIGSUM_TEST1_2025 = "sigsum-test1-2025" -- "Policy using the sigsum test log at test.sigsum.org/barreleye",
+    SIGSUM_TEST2_2025 = "sigsum-test2-2025" -- "Policy using the sigsum test log at test.sigsum.org/barreleye",
+    SIGSUM_TEST_2025_3 = "sigsum-test-2025-3" -- "Policy using two sigsum test logs at test.sigsum.org/barreleye and serviceberry.tlog.stagemole.eu",
+    SIGSUM_GENERIC_2025_1 = "sigsum-generic-2025-1" -- "This is a Sigsum trust policy that has been vetted by the Sigsum project",
 }
