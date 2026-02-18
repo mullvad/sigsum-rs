@@ -15,12 +15,10 @@ pub struct PublicKey {
 
 impl PublicKey {
     /// Verify that `sig` is a valid signature on `data` from this key.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the public key bytes are not a valid Ed25519 public key.
     pub fn verify_signature(&self, data: impl AsRef<[u8]>, sig: &Signature) -> bool {
-        let verifier = ed25519_dalek::VerifyingKey::from_bytes(&self.bytes).unwrap();
+        let Ok(verifier) = ed25519_dalek::VerifyingKey::from_bytes(&self.bytes) else {
+            return false;
+        };
         let signature = ed25519_dalek::Signature::from(&sig.bytes);
         verifier.verify(data.as_ref(), &signature).is_ok()
     }
@@ -168,6 +166,19 @@ mod tests {
         let signature :Signature= hex!("0115534da664b0d98e307f6562cf2304921e74d82a25b0a8c034fc46560257716f62d09eab1e8dcac09ffb675285d10bff5f0d650899d5236b51291d6f674607").into();
         let pubkey: PublicKey =
             hex!("ed9cdbc8d80d93ec12581be61413b5fdba1cda57f1cde986ef9e83f0558e7e67").into();
+        assert!(!pubkey.verify_signature(data, &signature));
+    }
+
+    /// This test checks that with a key that does not pass the
+    /// ed25519_dalek::VerifyingKey::from_bytes verification,
+    /// returns false and does not panic or return true.
+    #[test]
+    fn publickey_verify_signature_invalid_key() {
+        let data = b"Time is an illusion. Lunchtime doubly so.";
+        let signature :Signature= hex!("b115534da664b0d98e307f6562cf2304921e74d82a25b0a8c034fc46560257716f62d09eab1e8dcac09ffb675285d10bff5f0d650899d5236b51291d6f674607").into();
+        // This public key does not pass the dalek key verification
+        let pubkey: PublicKey =
+            hex!("95fbfdc65f4a1c92469440b3fb23cefefe9f26d86057b805243c607ec7eb4f7b").into();
         assert!(!pubkey.verify_signature(data, &signature));
     }
 }
