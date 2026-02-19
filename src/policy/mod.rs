@@ -123,7 +123,7 @@ pub struct Logs<'a> {
     inner: std::collections::hash_map::Iter<'a, Hash, Entity>,
 }
 
-impl<'a> Iterator for Logs<'a> {
+impl Iterator for Logs<'_> {
     type Item = Log;
 
     fn next(&mut self) -> Option<Self::Item> {

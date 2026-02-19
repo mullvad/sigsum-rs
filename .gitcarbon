@@ -1,3 +1,6 @@
+[carbon ".github/workflows/cargo-shear.yml"]
+	sourceRepository = https://github.com/mullvad/coding-guidelines.git
+	sourcePath = rust/.github/workflows/cargo-shear.yml
 [carbon "src/testdata/inclusion-invalid.json"]
 	sourceRepository = https://github.com/rgdd/cctv.git
 	sourcePath = merkle/testdata/inclusion-invalid.json
