@@ -45,7 +45,7 @@ impl SignedTreeHead {
         })
     }
 
-    #[allow(unused_must_use)]
+    #[expect(unused_must_use)]
     pub fn to_ascii(&self) -> String {
         let mut ascii = String::new();
         writeln!(ascii, "{SIZE_FIELD}={}", self.size);
@@ -77,7 +77,7 @@ impl InclusionProof {
         })
     }
 
-    #[allow(unused_must_use)]
+    #[expect(unused_must_use)]
     pub fn to_ascii(&self) -> String {
         let mut ascii = String::new();
         writeln!(ascii, "{LEAF_INDEX_FIELD}={}", self.leaf_index);
@@ -101,7 +101,7 @@ impl Protoleaf {
         })
     }
 
-    #[allow(unused_must_use)]
+    #[expect(unused_must_use)]
     pub fn to_ascii(&self) -> String {
         let mut ascii = String::new();
         writeln!(ascii, "{MESSAGE_FIELD}={:x}", self.message);
@@ -143,7 +143,7 @@ impl SigsumSignature {
         })
     }
 
-    #[allow(unused_must_use)]
+    #[expect(unused_must_use)]
     pub fn to_ascii(&self) -> String {
         let mut ascii = String::new();
         writeln!(ascii, "{VERSION_FIELD}=2");

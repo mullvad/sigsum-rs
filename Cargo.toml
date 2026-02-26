@@ -2,14 +2,13 @@
 name = "sigsum"
 version = "0.2.0"
 edition = "2021"
-license = "MIT"
-homepage = "https://github.com/mullvad/sigsum-rs"
-repository = "https://github.com/mullvad/sigsum-rs"
-documentation = "https://docs.rs/sigsum"
 description = """
 A Rust library for using Sigsum transparency logs.
 """
-
+documentation = "https://docs.rs/sigsum"
+homepage = "https://github.com/mullvad/sigsum-rs"
+repository = "https://github.com/mullvad/sigsum-rs"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -28,4 +27,27 @@ serde = { version = "1.0.190", features = ["derive"] }
 serde_json = "1.0.107"
 
 [lints.clippy]
+allow_attributes = "warn"
+as_ptr_cast_mut = "warn"
+as_underscore = "warn"
+borrow_as_ptr = "warn"
+implicit_clone = "warn"
 todo = "deny"
+undocumented_unsafe_blocks = "warn"
+unicode_not_nfc = "warn"
+unused_async = "deny"
+wildcard_dependencies = "deny"
+
+[lints.rust]
+absolute_paths_not_starting_with_crate = "deny"
+# Easy to read style and opinionated best practices
+explicit_outlives_requirements = "warn"
+macro_use_extern_crate = "deny"
+missing_abi = "deny"
+# Security
+non_ascii_idents = "forbid"
+# Deny old style Rust
+rust_2018_idioms = { level = "deny", priority = -1 }
+single_use_lifetimes = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
