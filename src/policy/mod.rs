@@ -74,7 +74,7 @@
 
 use std::collections::HashMap;
 
-use crate::crypto::{Hash, PublicKey};
+use crate::crypto::{Hash, PublicKey, Signature};
 
 mod builtin;
 pub use builtin::*;
@@ -117,6 +117,21 @@ pub struct Witness {
     pub name: String,
     pub pubkey: PublicKey,
     pub url: Option<String>,
+}
+
+impl Witness {
+    pub fn verify_cosignature(
+        &self,
+        log_keyhash: &Hash,
+        log_size: u64,
+        root_hash: &Hash,
+        timestamp: u64,
+        cosignature: &Signature,
+    ) -> bool {
+        let msg =
+            crate::serialization::cosigned_checkpoint(timestamp, log_keyhash, log_size, root_hash);
+        self.pubkey.verify_signature(msg.as_bytes(), cosignature)
+    }
 }
 
 pub struct Logs<'a> {

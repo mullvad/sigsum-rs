@@ -3,8 +3,6 @@ use crate::policy::Policy;
 use std::error::Error;
 use std::fmt;
 
-use base64ct::{Base64, Encoding};
-
 use crate::{Hash, PublicKey, Signature, SignedTreeHead, SigsumSignature};
 
 #[derive(Debug)]
@@ -79,7 +77,8 @@ fn verify_sth(log_keyhash: &Hash, sth: &SignedTreeHead, policy: &Policy) -> Resu
         bail!("unknown log keyhash");
     };
 
-    let msg = serialize_tree_head(&Hash::new(&log_key), sth.size, &sth.root_hash);
+    let msg =
+        crate::serialization::merkle_tree_head(&Hash::new(&log_key), sth.size, &sth.root_hash);
     if !log_key.verify_signature(msg.as_bytes(), &sth.signature) {
         bail!("bad log signature");
     }
@@ -90,16 +89,13 @@ fn verify_sth(log_keyhash: &Hash, sth: &SignedTreeHead, policy: &Policy) -> Resu
             // We don't know about this witness, that's ok and we just move on.
             continue;
         };
-        let msg = serialize_cosigned_checkpoint(
-            cosig.timestamp,
+        if !witness.verify_cosignature(
             &Hash::new(&log_key),
             sth.size,
             &sth.root_hash,
-        );
-        if !witness
-            .pubkey
-            .verify_signature(msg.as_bytes(), &cosig.cosignature)
-        {
+            cosig.timestamp,
+            &cosig.cosignature,
+        ) {
             bail!("bad witness cosignature from {:x}", witness.pubkey)
         }
         valid_cosignatures.push(Hash::new(witness.pubkey));
@@ -110,30 +106,6 @@ fn verify_sth(log_keyhash: &Hash, sth: &SignedTreeHead, policy: &Policy) -> Resu
     } else {
         bail!("not enough valid cosignatures");
     }
-}
-
-// Serialized tree head used for signing
-// => https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md#222--merkle-tree-head
-fn serialize_tree_head(log_keyhash: &Hash, log_size: u64, root_hash: &Hash) -> String {
-    format!(
-        "sigsum.org/v1/tree/{:x}\n{}\n{}\n",
-        log_keyhash,
-        log_size,
-        Base64::encode_string(root_hash.as_ref())
-    )
-}
-
-fn serialize_cosigned_checkpoint(
-    time: u64,
-    log_keyhash: &Hash,
-    log_size: u64,
-    root_hash: &Hash,
-) -> String {
-    format!(
-        "cosignature/v1\ntime {}\n{}",
-        time,
-        serialize_tree_head(log_keyhash, log_size, root_hash)
-    )
 }
 
 fn verify_inclusion_proof(checksum: &Hash, signature: &SigsumSignature) -> Result {
