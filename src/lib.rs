@@ -71,6 +71,7 @@ mod crypto;
 mod log;
 mod merkle;
 pub mod policy;
+mod serialization;
 mod sigsumsig;
 mod verify;
 
