@@ -62,8 +62,8 @@ pub fn lsb(n: u64) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use alloc::{string::String, vec::Vec};
     use super::*;
+    use alloc::{string::String, vec::Vec};
 
     use base64ct::{Base64, Encoding};
     use serde::Deserialize;

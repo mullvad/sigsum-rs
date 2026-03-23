@@ -176,8 +176,8 @@ impl SigsumSignature {
 
 #[cfg(test)]
 mod tests {
-    use alloc::{string::ToString, vec};
     use super::*;
+    use alloc::{string::ToString, vec};
     use hex_literal::hex;
     use lazy_static::lazy_static;
 

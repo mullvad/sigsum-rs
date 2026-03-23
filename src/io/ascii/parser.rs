@@ -151,8 +151,8 @@ fn hexchar(ch: u8) -> Result<u8> {
 
 #[cfg(test)]
 mod tests {
-    use alloc::string::ToString;
     use super::*;
+    use alloc::string::ToString;
 
     #[test]
     fn parser_at_end() {
