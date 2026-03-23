@@ -60,6 +60,10 @@
 //!
 //! Please make sure to update tests as appropriate.
 
+#![no_std]
+
+extern crate alloc;
+
 mod io {
     pub(crate) mod ascii;
 }

@@ -1,4 +1,4 @@
-use std::fmt;
+use core::fmt;
 
 use ed25519_dalek::ed25519::signature::Verifier as _;
 use sha2::{Digest, Sha256};
@@ -31,7 +31,7 @@ pub struct Signature {
 }
 
 /// A SHA256 digest.
-#[derive(Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Hash {
     bytes: [u8; HASH_SIZE],
 }
@@ -89,6 +89,7 @@ boilerplate!(Signature, 64);
 
 #[cfg(test)]
 mod tests {
+    use alloc::format;
     use hex_literal::hex;
 
     use super::*;

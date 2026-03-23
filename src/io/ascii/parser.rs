@@ -1,7 +1,8 @@
-use std::error::Error;
-use std::fmt;
-use std::iter::Peekable;
-use std::str::Lines;
+use alloc::{format, string::String, vec::Vec};
+use core::error::Error;
+use core::fmt;
+use core::iter::Peekable;
+use core::str::Lines;
 
 use crate::{
     crypto::{HASH_SIZE, PUBKEY_SIZE, SIGNATURE_SIZE},
@@ -28,7 +29,7 @@ macro_rules! bail {
     };
 }
 
-pub(crate) type Result<T> = std::result::Result<T, ParseAsciiError>;
+pub(crate) type Result<T> = core::result::Result<T, ParseAsciiError>;
 
 pub(crate) struct Parser<'a> {
     lines: Peekable<Lines<'a>>,
@@ -150,6 +151,7 @@ fn hexchar(ch: u8) -> Result<u8> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::string::ToString;
     use super::*;
 
     #[test]

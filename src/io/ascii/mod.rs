@@ -1,7 +1,8 @@
 mod parser;
 
 // This needs to be in scope to write!() to a String
-use std::fmt::Write as _;
+use alloc::{format, string::String, vec::Vec};
+use core::fmt::Write as _;
 
 use crate::{
     Hash, InclusionProof, Protoleaf, Signature, SignedTreeHead, SigsumSignature, WitnessCosignature,
@@ -175,6 +176,7 @@ impl SigsumSignature {
 
 #[cfg(test)]
 mod tests {
+    use alloc::{string::ToString, vec};
     use super::*;
     use hex_literal::hex;
     use lazy_static::lazy_static;

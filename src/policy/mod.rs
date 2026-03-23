@@ -72,7 +72,7 @@
 //! let policy = builder.build();
 //! ```
 
-use std::collections::HashMap;
+use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
 use crate::crypto::{Hash, PublicKey};
 
@@ -93,13 +93,13 @@ pub use parsing::ParsePolicyError;
 #[derive(Debug, Eq, PartialEq)]
 pub struct Policy {
     // logs keeps the list of log keys and URLs indexed by keyhash.
-    logs: HashMap<Hash, Entity>,
+    logs: BTreeMap<Hash, Entity>,
 
     // witnesses keeps the list of witness keys and URLs indexed by keyhash.
-    witnesses: HashMap<Hash, Entity>,
+    witnesses: BTreeMap<Hash, Entity>,
 
     // quorums keeps the quorum entries (witnesses and groups), indexed by name.
-    quorums: HashMap<String, Quorum>,
+    quorums: BTreeMap<String, Quorum>,
 
     // quorum is the quorum required by the policy. Invariant: if present, quorum must be an
     // existing key in quorums.
@@ -120,7 +120,7 @@ pub struct Witness {
 }
 
 pub struct Logs<'a> {
-    inner: std::collections::hash_map::Iter<'a, Hash, Entity>,
+    inner: alloc::collections::btree_map::Iter<'a, Hash, Entity>,
 }
 
 impl Iterator for Logs<'_> {
@@ -252,9 +252,9 @@ impl Default for PolicyBuilder {
 impl PolicyBuilder {
     pub fn new() -> Self {
         Self(Policy {
-            logs: HashMap::new(),
-            witnesses: HashMap::new(),
-            quorums: HashMap::new(),
+            logs: BTreeMap::new(),
+            witnesses: BTreeMap::new(),
+            quorums: BTreeMap::new(),
             quorum: None,
         })
     }
@@ -325,6 +325,7 @@ impl PolicyBuilder {
 
 #[cfg(test)]
 mod tests {
+    use alloc::{string::String, string::ToString, vec};
     use hex_literal::hex;
 
     use super::*;
@@ -333,9 +334,9 @@ mod tests {
     fn build_empty_policy() {
         let builder = PolicyBuilder::new();
         let expected = Policy {
-            logs: HashMap::new(),
-            witnesses: HashMap::new(),
-            quorums: HashMap::new(),
+            logs: BTreeMap::new(),
+            witnesses: BTreeMap::new(),
+            quorums: BTreeMap::new(),
             quorum: None,
         };
         assert_eq!(expected, builder.build());
@@ -379,7 +380,7 @@ mod tests {
             .unwrap();
         builder.set_quorum(String::from("mygroup")).unwrap();
         let expected = Policy {
-            logs: HashMap::from([
+            logs: BTreeMap::from([
                 (
                     hex!("e919506c3a798f2030f14046e39f03773c12b390e1010c95d2256d0ae594354e").into(),
                     Entity(
@@ -397,7 +398,7 @@ mod tests {
                     ),
                 ),
             ]),
-            witnesses: HashMap::from([
+            witnesses: BTreeMap::from([
                 (
                     hex!("d9440882ae2bd57076d4da2e7a12d4b26e137d56116419a69f8d6969709ed747").into(),
                     Entity(
@@ -415,7 +416,7 @@ mod tests {
                     ),
                 ),
             ]),
-            quorums: HashMap::from([
+            quorums: BTreeMap::from([
                 (
                     "witness01".into(),
                     Quorum::Witness(

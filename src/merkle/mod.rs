@@ -1,6 +1,7 @@
 // We want to keep the code as close as possible as the spec. So we ignore clippy warningcs.
 #![allow(clippy::all)]
 
+use alloc::vec::Vec;
 use sha2::{Digest, Sha256};
 
 type Hash = [u8; 32];
@@ -61,6 +62,7 @@ pub fn lsb(n: u64) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use alloc::{string::String, vec::Vec};
     use super::*;
 
     use base64ct::{Base64, Encoding};

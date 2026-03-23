@@ -4,8 +4,8 @@
 //! and used directly as public statics, or looked up at runtime by name via
 //! [`Policy::builtin`].
 
-use std::ops::Deref;
-use std::sync::LazyLock;
+use core::ops::Deref;
+use spin::Lazy;
 
 use super::Policy;
 
@@ -20,7 +20,7 @@ pub struct BuiltInPolicy {
     /// The user-friendly name of the built-in policy.
     pub name: &'static str,
 
-    policy: LazyLock<Policy>,
+    policy: Lazy<Policy>,
 }
 
 impl BuiltInPolicy {
@@ -62,7 +62,7 @@ macro_rules! define_builtin_policies {
             #[doc = "```"]
             pub static $const_name: BuiltInPolicy = BuiltInPolicy {
                 name: $policy_name,
-                policy: LazyLock::new(|| {
+                policy: Lazy::new(|| {
                     Policy::parse(include_str!(concat!(
                         "../../builtin-policies/",
                         $policy_name,
