@@ -60,7 +60,7 @@
 //!
 //! Please make sure to update tests as appropriate.
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
 

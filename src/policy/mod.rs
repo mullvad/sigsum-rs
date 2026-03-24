@@ -77,6 +77,7 @@ use alloc::{collections::BTreeMap, string::String, vec::Vec};
 use crate::crypto::{Hash, PublicKey};
 
 mod builtin;
+#[cfg(feature = "std")]
 pub use builtin::*;
 
 mod parsing;
@@ -140,7 +141,7 @@ impl Policy {
     ///
     /// All built-in policies are also exposed as statics directly in the
     /// [`policy`](crate::policy) module.
-    pub fn builtin(name: &str) -> Option<&'static Self> {
+    pub fn builtin(name: &str) -> Option<Policy> {
         builtin::builtin(name)
     }
 
