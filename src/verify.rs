@@ -1,10 +1,11 @@
-use crate::merkle;
-use crate::policy::Policy;
-use std::error::Error;
-use std::fmt;
+use alloc::{format, string::String, vec, vec::Vec};
+use core::error::Error;
+use core::fmt;
 
 use base64ct::{Base64, Encoding};
 
+use crate::merkle;
+use crate::policy::Policy;
 use crate::{Hash, PublicKey, Signature, SignedTreeHead, SigsumSignature};
 
 #[derive(Debug)]
@@ -18,7 +19,7 @@ impl fmt::Display for VerifyError {
 
 impl Error for VerifyError {}
 
-type Result = std::result::Result<(), VerifyError>;
+type Result = core::result::Result<(), VerifyError>;
 
 macro_rules! bail {
     ($msg:literal) => {

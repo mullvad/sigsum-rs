@@ -1,5 +1,7 @@
 // Implements types related to the sigsum log
 
+use alloc::vec::Vec;
+
 use crate::crypto::{Hash, PublicKey, Signature};
 
 /// A signed tree head, as returned by the get-tree-head endpoint.

@@ -1,5 +1,6 @@
-use std::iter::Enumerate;
-use std::str::Lines;
+use alloc::{format, string::String, string::ToString, vec::Vec};
+use core::iter::Enumerate;
+use core::str::Lines;
 
 use super::{Policy, PolicyBuilder};
 use crate::crypto::PublicKey;
@@ -17,7 +18,7 @@ macro_rules! bail {
     };
 }
 
-type Result<T> = std::result::Result<T, ParsePolicyError>;
+type Result<T> = core::result::Result<T, ParsePolicyError>;
 
 impl Policy {
     /// Parse a policy from its string representation according to the
@@ -161,6 +162,7 @@ impl<'a> Iterator for PolicyLines<'a> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::{vec, vec::Vec};
     use hex_literal::hex;
 
     use super::*;

@@ -4,7 +4,9 @@
 //! and used directly as public statics, or looked up at runtime by name via
 //! [`Policy::builtin`].
 
-use std::ops::Deref;
+#[cfg(feature = "std")]
+use core::ops::Deref;
+#[cfg(feature = "std")]
 use std::sync::LazyLock;
 
 use super::Policy;
@@ -16,6 +18,7 @@ use super::Policy;
 /// transparent.
 ///
 /// This policy is parsed and lazily initialized on first use.
+#[cfg(feature = "std")]
 pub struct BuiltInPolicy {
     /// The user-friendly name of the built-in policy.
     pub name: &'static str,
@@ -23,6 +26,7 @@ pub struct BuiltInPolicy {
     policy: LazyLock<Policy>,
 }
 
+#[cfg(feature = "std")]
 impl BuiltInPolicy {
     /// Returns the policy for this built-in policy. Can also be accessed
     /// via the `Deref` implementation.
@@ -31,6 +35,7 @@ impl BuiltInPolicy {
     }
 }
 
+#[cfg(feature = "std")]
 impl Deref for BuiltInPolicy {
     type Target = Policy;
 
@@ -60,32 +65,32 @@ macro_rules! define_builtin_policies {
                         ".builtin-policy"
                     ))]
             #[doc = "```"]
+            #[cfg(feature = "std")]
             pub static $const_name: BuiltInPolicy = BuiltInPolicy {
                 name: $policy_name,
-                policy: LazyLock::new(|| {
-                    Policy::parse(include_str!(concat!(
-                        "../../builtin-policies/",
-                        $policy_name,
-                        ".builtin-policy"
-                    )))
-                    .expect(concat!("Failed to parse built-in policy: ", $policy_name))
-                }),
+                policy: LazyLock::new(|| builtin($policy_name).expect(concat!("Failed to find built-in policy: ", $policy_name))),
             };
         )*
 
         /// Returns a built-in policy by name, if one exists.
-        /// Only intended to be used internally by [`Policy::builtin`].
-        pub(crate) fn builtin(name: &str) -> Option<&'static Policy> {
+        pub(crate) fn builtin(name: &str) -> Option<Policy> {
             match name {
                 $(
-                    $policy_name => Some(&$const_name.policy()),
+                    $policy_name => Some(
+                        Policy::parse(include_str!(concat!(
+                            "../../builtin-policies/",
+                            $policy_name,
+                            ".builtin-policy"
+                        )))
+                        .expect(concat!("Failed to parse built-in policy: ", $policy_name))
+                    ),
                 )*
                 _ => None,
             }
         }
 
         // Auto-generate tests. Asserts that all policies parse without panicking
-        #[cfg(test)]
+        #[cfg(all(test, feature = "std"))]
         mod tests {
             use super::*;
 
