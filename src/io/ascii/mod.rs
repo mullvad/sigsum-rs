@@ -114,14 +114,12 @@ impl Protoleaf {
 
 impl SigsumSignature {
     pub fn from_ascii(input: &str) -> Result<Self> {
-        let parts: Vec<&str> = input.split("\n\n").collect();
-        if parts.len() != 3 {
-            return Err(ParseAsciiError(format!(
-                "expected 3 parts, got {}",
-                parts.len()
-            )));
-        }
-        let mut p = Parser::new(parts[0]);
+        let mut parts = input.split("\n\n");
+        let mut p = Parser::new(
+            parts
+                .next()
+                .expect("str.split() should return at least one part"),
+        );
         let version: u64 = p.parse(VERSION_FIELD)?;
         if version != 2 {
             return Err(ParseAsciiError(format!("version {version} not supported")));
@@ -133,8 +131,32 @@ impl SigsumSignature {
                 "expected an empty line after 'leaf'".into(),
             ));
         }
-        let sth = SignedTreeHead::from_ascii(parts[1])?;
-        let proof = InclusionProof::from_ascii(parts[2])?;
+
+        // Parsing the tree head part
+        let Some(sth_part) = parts.next() else {
+            return Err(ParseAsciiError("missing tree head".into()));
+        };
+        let sth = SignedTreeHead::from_ascii(sth_part)?;
+
+        // Parsing the inclusion proof iff the tree size is not 1
+        let proof;
+        if sth.size > 1 {
+            let Some(proof_part) = parts.next() else {
+                return Err(ParseAsciiError("missing inclusion proof".into()));
+            };
+            proof = InclusionProof::from_ascii(proof_part)?;
+        } else if sth.size == 1 {
+            proof = InclusionProof {
+                leaf_index: 0,
+                node_hashes: Vec::new(),
+            };
+        } else {
+            return Err(ParseAsciiError("empty tree".into()));
+        }
+        if parts.next().is_some() {
+            return Err(ParseAsciiError("trailing data".into()));
+        };
+
         Ok(Self {
             log_keyhash,
             leaf_keyhash,
@@ -165,10 +187,12 @@ impl SigsumSignature {
                 cosig.keyhash, cosig.timestamp, cosig.cosignature
             );
         }
-        writeln!(ascii);
-        writeln!(ascii, "{LEAF_INDEX_FIELD}={}", self.proof.leaf_index);
-        for h in self.proof.node_hashes.iter() {
-            writeln!(ascii, "{NODE_HASH_FIELD}={h:x}");
+        if self.sth.size > 1 {
+            writeln!(ascii);
+            writeln!(ascii, "{LEAF_INDEX_FIELD}={}", self.proof.leaf_index);
+            for h in self.proof.node_hashes.iter() {
+                writeln!(ascii, "{NODE_HASH_FIELD}={h:x}");
+            }
         }
         ascii
     }
@@ -297,13 +321,68 @@ mod tests {
     ";
 
     #[test]
-    fn sigsumsig_from_ascii() {
+    fn ssig_from_ascii() {
         assert_eq!(*SSIG, SigsumSignature::from_ascii(SSIG_ASCII).unwrap());
     }
 
     #[test]
-    fn sigsumsig_to_ascii() {
+    fn ssig_to_ascii() {
         assert_eq!(SSIG_ASCII, (*SSIG).to_ascii());
+    }
+
+    lazy_static! {
+        static ref SSIG_SIZE1: SigsumSignature = SigsumSignature {
+            log_keyhash: hex!("4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d")
+                .into(),
+            leaf_keyhash: hex!("16e8e5005d909e941b34d040b646dba5b6608e5e3353c7db860f9b8849eae245").into(),
+            leaf_signature: hex!("e82c007b640da6375657e95bd9e3768017cd9b9478dffb7496a7de69b2e8608ceb35d336b44a3b1a3b0d4493cbc694bf87daf279684473024557dd427d34d900").into(),
+            sth: SignedTreeHead {
+            size: 1,
+            root_hash: hex!("8100f29c0e9017a7512dab0911bf06a4b5b99cd77d8c710635307b5d217af1f6").into(),
+            signature: hex!("e327fe13e5c3d2043cbf69fe1b778f77cb10a8e14fc09309dd375c9af25903f9ec35906cfb2c36ab2d210329eb538a6673487d2d101800370c978634b6f9f70d").into(),
+            cosignatures: vec![
+                WitnessCosignature {
+                    keyhash: hex!("1a450ecf1f49a4e4580c35e4d83316a74deda949dbb7d338e89d4315764d88de").into(),
+                    timestamp: 1687170591,
+                    cosignature: hex!("cacc54d315609b796f72ac1d71d1bbc15667853ed980bd3e0f957de7a875b84bd2dcde6489fc3ed66428190ce588ac1061b0d5748e73cfb887ebf38d0b53060a").into(),
+                },
+                WitnessCosignature {
+                    keyhash: hex!("73b6cbe5e3c8e679fb5967b78c59e95db2969a5c13b3423b5e69523e3d52f531").into(),
+                    timestamp: 1687170591,
+                    cosignature: hex!("7f568da17c57ea322a9c2668ae9fc2c1d6ab5556d9a997e7bfa1cbc4dc5cf7b94e0cead42d481bf0d3d90ad2ee0d272e9e687f8f82fddf76d37d722c6815fe0f").into(),
+                },
+            ],
+        },
+            proof: InclusionProof {
+            leaf_index: 0,
+            node_hashes: vec![],
+        },
+        };
+    }
+
+    const SSIG_SIZE1_ASCII:&str = "\
+    version=2\n\
+    log=4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d\n\
+    leaf=16e8e5005d909e941b34d040b646dba5b6608e5e3353c7db860f9b8849eae245 e82c007b640da6375657e95bd9e3768017cd9b9478dffb7496a7de69b2e8608ceb35d336b44a3b1a3b0d4493cbc694bf87daf279684473024557dd427d34d900\n\
+    \n\
+    size=1\n\
+    root_hash=8100f29c0e9017a7512dab0911bf06a4b5b99cd77d8c710635307b5d217af1f6\n\
+    signature=e327fe13e5c3d2043cbf69fe1b778f77cb10a8e14fc09309dd375c9af25903f9ec35906cfb2c36ab2d210329eb538a6673487d2d101800370c978634b6f9f70d\n\
+    cosignature=1a450ecf1f49a4e4580c35e4d83316a74deda949dbb7d338e89d4315764d88de 1687170591 cacc54d315609b796f72ac1d71d1bbc15667853ed980bd3e0f957de7a875b84bd2dcde6489fc3ed66428190ce588ac1061b0d5748e73cfb887ebf38d0b53060a\n\
+    cosignature=73b6cbe5e3c8e679fb5967b78c59e95db2969a5c13b3423b5e69523e3d52f531 1687170591 7f568da17c57ea322a9c2668ae9fc2c1d6ab5556d9a997e7bfa1cbc4dc5cf7b94e0cead42d481bf0d3d90ad2ee0d272e9e687f8f82fddf76d37d722c6815fe0f\n\
+    ";
+
+    #[test]
+    fn ssig_size1_from_ascii() {
+        assert_eq!(
+            *SSIG_SIZE1,
+            SigsumSignature::from_ascii(SSIG_SIZE1_ASCII).unwrap()
+        );
+    }
+
+    #[test]
+    fn ssig_size1_to_ascii() {
+        assert_eq!(SSIG_SIZE1_ASCII, (*SSIG_SIZE1).to_ascii());
     }
 
     macro_rules! test_ssig_parse_error {
@@ -318,9 +397,21 @@ mod tests {
         };
     }
 
+    test_ssig_parse_error! { ssig_empty, "unexpected end of input", "" }
+
     test_ssig_parse_error! {
-        ssig_missing_part,
-        "expected 3 parts, got 2",
+        ssig_missing_sth,
+        "missing tree head",
+        "\
+        version=2\n\
+        log=4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d\n\
+        leaf=16e8e5005d909e941b34d040b646dba5b6608e5e3353c7db860f9b8849eae245 e82c007b640da6375657e95bd9e3768017cd9b9478dffb7496a7de69b2e8608ceb35d336b44a3b1a3b0d4493cbc694bf87daf279684473024557dd427d34d900\n\
+        "
+    }
+
+    test_ssig_parse_error! {
+        ssig_missing_proof,
+        "missing inclusion proof",
         "\
         version=2\n\
         log=4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d\n\
@@ -332,8 +423,42 @@ mod tests {
         "
     }
 
-    test_ssig_parse_error! { sigsum_signature_too_many_parts,
-        "expected 3 parts, got 4",
+    test_ssig_parse_error! {
+        ssig_empty_tree,
+        "empty tree",
+        "\
+        version=2\n\
+        log=4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d\n\
+        leaf=16e8e5005d909e941b34d040b646dba5b6608e5e3353c7db860f9b8849eae245 e82c007b640da6375657e95bd9e3768017cd9b9478dffb7496a7de69b2e8608ceb35d336b44a3b1a3b0d4493cbc694bf87daf279684473024557dd427d34d900\n\
+        \n\
+        size=0\n\
+        root_hash=5a2221ac3be281d2403abb44f9b6a8b1b1b2db97e5838d029a2df19db5e708bd\n\
+        signature=67de0c13f8ae8a13ca2ad2aaab35326ba55186d240cbb48f4872a79847a41b5d2b43820dc8f4ae43030d432bbf753c365ba7a248fc12ea7be53f05bb72829409\n\
+        "
+    }
+
+    test_ssig_parse_error! {
+        ssig_trailing_data,
+        "trailing data",
+        "\
+        version=2\n\
+        log=4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d\n\
+        leaf=16e8e5005d909e941b34d040b646dba5b6608e5e3353c7db860f9b8849eae245 e82c007b640da6375657e95bd9e3768017cd9b9478dffb7496a7de69b2e8608ceb35d336b44a3b1a3b0d4493cbc694bf87daf279684473024557dd427d34d900\n\
+        \n\
+        size=2\n\
+        root_hash=5a2221ac3be281d2403abb44f9b6a8b1b1b2db97e5838d029a2df19db5e708bd\n\
+        signature=67de0c13f8ae8a13ca2ad2aaab35326ba55186d240cbb48f4872a79847a41b5d2b43820dc8f4ae43030d432bbf753c365ba7a248fc12ea7be53f05bb72829409\n\
+        \n\
+        leaf_index=1\n\
+        node_hash=35fd6eb70d46d60679775c346225688e6e84c02c3c7978e5c51daf8decc22d2f\n\
+        \n\
+        abc=123\n\
+        "
+    }
+
+    test_ssig_parse_error! {
+        ssig_size1_trailing_data,
+        "trailing data",
         "\
         version=2\n\
         log=4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d\n\
@@ -343,9 +468,7 @@ mod tests {
         root_hash=5a2221ac3be281d2403abb44f9b6a8b1b1b2db97e5838d029a2df19db5e708bd\n\
         signature=67de0c13f8ae8a13ca2ad2aaab35326ba55186d240cbb48f4872a79847a41b5d2b43820dc8f4ae43030d432bbf753c365ba7a248fc12ea7be53f05bb72829409\n\
         \n\
-        leaf_index=1\n\
-        \n\
-        abc=123\n\
+        leaf_index=0\n\
         "
     }
 
