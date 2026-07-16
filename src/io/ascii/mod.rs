@@ -5,7 +5,8 @@ use alloc::{format, string::String, vec::Vec};
 use core::fmt::Write as _;
 
 use crate::{
-    Hash, InclusionProof, Protoleaf, Signature, SignedTreeHead, SigsumSignature, WitnessCosignature,
+    Hash, InclusionProof, Leaf, Protoleaf, Signature, SignedTreeHead, SigsumSignature,
+    WitnessCosignature,
 };
 pub use parser::ParseAsciiError;
 use parser::{Parser, Result};
@@ -112,6 +113,28 @@ impl Protoleaf {
     }
 }
 
+impl Leaf {
+    pub fn from_ascii(input: &str) -> Result<Self> {
+        let mut p = Parser::new(input);
+        let (digest, signature, keyhash) = p.parse(LEAF_FIELD)?;
+        Ok(Leaf {
+            digest,
+            signature,
+            keyhash,
+        })
+    }
+    #[expect(unused_must_use)]
+    pub fn to_ascii(&self) -> String {
+        let mut ascii = String::new();
+        writeln!(
+            ascii,
+            "{LEAF_FIELD}={:x} {:x} {:x}",
+            self.digest, self.signature, self.keyhash
+        );
+        ascii
+    }
+}
+
 impl SigsumSignature {
     pub fn from_ascii(input: &str) -> Result<Self> {
         let mut parts = input.split("\n\n");
@@ -205,6 +228,8 @@ mod tests {
     use hex_literal::hex;
     use lazy_static::lazy_static;
 
+    // --- ProtoLeaf ---------------------------------------------------------
+
     lazy_static! {
         static ref PROTOLEAF: Protoleaf = Protoleaf {
             message: hex!("084c799cd551dd1d8d5c5f9a5d593b2e931f5e36122ee5c793c1d08a19839cc0").into(),
@@ -228,6 +253,8 @@ mod tests {
     fn protoleaf_to_ascii() {
         assert_eq!(PROTOLEAF_ASCII, (*PROTOLEAF).to_ascii());
     }
+
+    // --- SignedTreeHead ----------------------------------------------------
 
     lazy_static!{
         static ref STH: SignedTreeHead = SignedTreeHead {
@@ -267,6 +294,8 @@ mod tests {
         assert_eq!(STH_ASCII, (*STH).to_ascii());
     }
 
+    // --- InclusionProof ----------------------------------------------------
+
     lazy_static! {
         static ref PROOF: InclusionProof = InclusionProof {
             leaf_index: 2,
@@ -292,6 +321,32 @@ mod tests {
     fn proof_to_ascii() {
         assert_eq!(PROOF_ASCII, (*PROOF).to_ascii());
     }
+
+    // --- Leaf --------------------------------------------------------------
+
+    lazy_static! {
+        static ref LEAF: Leaf = Leaf {
+            digest: hex!("3d07493a9639ad8ddfedfcb4198cc4166fca5927420e4b8a042913559b0941d3").into(),
+            signature: hex!("2778a109413411a81dac4e4978abbc9cd68d6d4233ff6b3769fe3757af8da6c6d2eb4da8d7035236fe09a4b754c92fc2efa61bac98814561b64af9c29da0ca0a").into(),
+            keyhash: hex!("2ca612aaa355c19a0cc7ebaacb04723b97e873df4dbadd0f97a2e00a13d8f76a").into(),
+        };
+    }
+
+    const LEAF_ASCII: &str = "\
+    leaf=3d07493a9639ad8ddfedfcb4198cc4166fca5927420e4b8a042913559b0941d3 2778a109413411a81dac4e4978abbc9cd68d6d4233ff6b3769fe3757af8da6c6d2eb4da8d7035236fe09a4b754c92fc2efa61bac98814561b64af9c29da0ca0a 2ca612aaa355c19a0cc7ebaacb04723b97e873df4dbadd0f97a2e00a13d8f76a\n\
+    ";
+
+    #[test]
+    fn leaf_from_ascii() {
+        assert_eq!(*LEAF, Leaf::from_ascii(LEAF_ASCII).unwrap());
+    }
+
+    #[test]
+    fn leaf_to_ascii() {
+        assert_eq!(LEAF_ASCII, (*LEAF).to_ascii());
+    }
+
+    // --- SigsumSignature ---------------------------------------------------
 
     lazy_static! {
         static ref SSIG: SigsumSignature = SigsumSignature {
