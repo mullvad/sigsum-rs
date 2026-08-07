@@ -72,7 +72,11 @@
 //! let policy = builder.build();
 //! ```
 
-use alloc::{collections::BTreeMap, string::String, vec::Vec};
+use alloc::{
+    collections::{BTreeMap, BTreeSet},
+    string::String,
+    vec::Vec,
+};
 
 use crate::crypto::{Hash, PublicKey};
 
@@ -213,7 +217,7 @@ enum Quorum {
     Witness(Hash),
 
     // A Group that requires at least k of its subquorums to pass.
-    // Invariant: k <= length(members)
+    // Invariant: 1 <= k <= length(members)
     // Invariant: if a group is in Policy.quorums, then all its members must be in
     // Policy.quorums as well.
     Group { k: usize, members: Vec<String> },
@@ -234,6 +238,12 @@ pub enum PolicyError {
     #[error("duplicate name")]
     DuplicateName(String),
 
+    #[error("invalid group threshold {threshold} for {members} members")]
+    InvalidGroupThreshold { threshold: usize, members: usize },
+
+    #[error("group/witness `{member}` is already a member of `{group}`")]
+    GroupMemberAlreadyUsed { member: String, group: String },
+
     #[error("{0}: no such witness")]
     UnknownName(String),
 
@@ -242,7 +252,10 @@ pub enum PolicyError {
 }
 
 #[derive(Debug)]
-pub struct PolicyBuilder(Policy);
+pub struct PolicyBuilder {
+    policy: Policy,
+    used_group_members: BTreeMap<String, String>,
+}
 
 impl Default for PolicyBuilder {
     fn default() -> Self {
@@ -252,12 +265,15 @@ impl Default for PolicyBuilder {
 
 impl PolicyBuilder {
     pub fn new() -> Self {
-        Self(Policy {
-            logs: BTreeMap::new(),
-            witnesses: BTreeMap::new(),
-            quorums: BTreeMap::new(),
-            quorum: None,
-        })
+        Self {
+            policy: Policy {
+                logs: BTreeMap::new(),
+                witnesses: BTreeMap::new(),
+                quorums: BTreeMap::new(),
+                quorum: None,
+            },
+            used_group_members: BTreeMap::new(),
+        }
     }
     pub fn add_log(
         &mut self,
@@ -265,10 +281,10 @@ impl PolicyBuilder {
         url: Option<String>,
     ) -> Result<&mut Self, PolicyError> {
         let keyhash = Hash::new(&key);
-        if self.0.logs.contains_key(&keyhash) {
+        if self.policy.logs.contains_key(&keyhash) {
             return Err(PolicyError::DuplicateLogKey(key));
         }
-        self.0.logs.insert(keyhash, Entity(key, url));
+        self.policy.logs.insert(keyhash, Entity(key, url));
         Ok(self)
     }
 
@@ -278,15 +294,20 @@ impl PolicyBuilder {
         key: PublicKey,
         url: Option<String>,
     ) -> Result<&mut Self, PolicyError> {
-        let keyhash = Hash::new(&key);
-        if self.0.witnesses.contains_key(&keyhash) {
-            return Err(PolicyError::DuplicateWitnessKey(key));
-        }
-        if self.0.quorums.contains_key(&name) {
+        if name == "none" {
             return Err(PolicyError::DuplicateName(name));
         }
-        self.0.witnesses.insert(keyhash.clone(), Entity(key, url));
-        self.0.quorums.insert(name, Quorum::Witness(keyhash));
+        let keyhash = Hash::new(&key);
+        if self.policy.witnesses.contains_key(&keyhash) {
+            return Err(PolicyError::DuplicateWitnessKey(key));
+        }
+        if self.policy.quorums.contains_key(&name) {
+            return Err(PolicyError::DuplicateName(name));
+        }
+        self.policy
+            .witnesses
+            .insert(keyhash.clone(), Entity(key, url));
+        self.policy.quorums.insert(name, Quorum::Witness(keyhash));
         Ok(self)
     }
 
@@ -296,31 +317,60 @@ impl PolicyBuilder {
         k: usize,
         members: Vec<String>,
     ) -> Result<&mut Self, PolicyError> {
-        if self.0.quorums.contains_key(&name) {
+        if name == "none" || self.policy.quorums.contains_key(&name) {
             return Err(PolicyError::DuplicateName(name));
         }
-        for name in members.iter() {
-            if !self.0.quorums.contains_key(name) {
-                return Err(PolicyError::UnknownName(name.into()));
+
+        if !(1..=members.len()).contains(&k) {
+            return Err(PolicyError::InvalidGroupThreshold {
+                threshold: k,
+                members: members.len(),
+            });
+        }
+
+        let mut new_members = BTreeSet::new();
+        for member in members.iter() {
+            if !self.policy.quorums.contains_key(member) {
+                return Err(PolicyError::UnknownName(member.into()));
+            }
+
+            if let Some(previous_group) = self.used_group_members.get(member) {
+                return Err(PolicyError::GroupMemberAlreadyUsed {
+                    member: member.clone(),
+                    group: previous_group.clone(),
+                });
+            }
+
+            if !new_members.insert(member) {
+                return Err(PolicyError::GroupMemberAlreadyUsed {
+                    member: member.clone(),
+                    group: name.clone(),
+                });
             }
         }
-        self.0.quorums.insert(name, Quorum::Group { k, members });
+
+        for member in members.iter() {
+            self.used_group_members.insert(member.clone(), name.clone());
+        }
+        self.policy
+            .quorums
+            .insert(name, Quorum::Group { k, members });
         Ok(self)
     }
 
     pub fn set_quorum(&mut self, name: String) -> Result<&mut Self, PolicyError> {
-        if self.0.quorum.is_some() {
+        if self.policy.quorum.is_some() {
             return Err(PolicyError::QuorumAlreadySet);
         }
-        if !self.0.quorums.contains_key(&name) {
+        if !self.policy.quorums.contains_key(&name) {
             return Err(PolicyError::UnknownName(name));
         }
-        self.0.quorum = Some(name);
+        self.policy.quorum = Some(name);
         Ok(self)
     }
 
     pub fn build(self) -> Policy {
-        self.0
+        self.policy
     }
 }
 
@@ -499,6 +549,31 @@ mod tests {
     }
 
     #[test]
+    fn none_is_a_reserved_name() {
+        let key: PublicKey =
+            hex!("ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
+        let mut builder = PolicyBuilder::new();
+
+        assert_eq!(
+            PolicyError::DuplicateName("none".into()),
+            builder
+                .add_witness("none".into(), key.clone(), None)
+                .unwrap_err()
+        );
+
+        builder.add_witness("witness".into(), key, None).unwrap();
+        assert_eq!(
+            PolicyError::DuplicateName("none".into()),
+            builder
+                .add_group("none".into(), 1, vec!["witness".into()])
+                .unwrap_err()
+        );
+        builder
+            .add_group("group".into(), 1, vec!["witness".into()])
+            .unwrap();
+    }
+
+    #[test]
     fn uplicate_unknown_member_name() {
         let mut builder = PolicyBuilder::new();
         let res = builder
@@ -506,6 +581,109 @@ mod tests {
             .unwrap_err();
         assert_eq!(PolicyError::UnknownName("mywitness".into()), res);
         insta::assert_debug_snapshot!(builder.build());
+    }
+
+    #[test]
+    fn invalid_group_threshold() {
+        let key: PublicKey =
+            hex!("ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
+        let mut builder = PolicyBuilder::new();
+
+        assert_eq!(
+            PolicyError::InvalidGroupThreshold {
+                threshold: 0,
+                members: 0,
+            },
+            builder.add_group("empty".into(), 0, vec![]).unwrap_err()
+        );
+
+        builder.add_witness("mywitness".into(), key, None).unwrap();
+
+        assert_eq!(
+            PolicyError::InvalidGroupThreshold {
+                threshold: 0,
+                members: 1,
+            },
+            builder
+                .add_group("zero".into(), 0, vec!["mywitness".into()])
+                .unwrap_err()
+        );
+        assert_eq!(
+            PolicyError::InvalidGroupThreshold {
+                threshold: 2,
+                members: 1,
+            },
+            builder
+                .add_group("too-large".into(), 2, vec!["mywitness".into()])
+                .unwrap_err()
+        );
+        builder
+            .add_group("valid".into(), 1, vec!["mywitness".into()])
+            .unwrap();
+    }
+
+    #[test]
+    fn group_member_can_only_be_used_once() {
+        let key1: PublicKey =
+            hex!("ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24").into();
+        let key2: PublicKey =
+            hex!("d9440882ae2bd57076d4da2e7a12d4b26e137d56116419a69f8d6969709ed747").into();
+        let mut builder = PolicyBuilder::new();
+        builder
+            .add_witness("witness1".into(), key1, None)
+            .unwrap()
+            .add_witness("witness2".into(), key2, None)
+            .unwrap();
+
+        assert_eq!(
+            PolicyError::GroupMemberAlreadyUsed {
+                member: "witness1".into(),
+                group: "duplicate".into(),
+            },
+            builder
+                .add_group(
+                    "duplicate".into(),
+                    2,
+                    vec!["witness1".into(), "witness1".into()],
+                )
+                .unwrap_err()
+        );
+
+        builder
+            .add_group("group1".into(), 1, vec!["witness1".into()])
+            .unwrap();
+        assert_eq!(
+            PolicyError::GroupMemberAlreadyUsed {
+                member: "witness1".into(),
+                group: "group1".into(),
+            },
+            builder
+                .add_group(
+                    "group2".into(),
+                    2,
+                    vec!["witness2".into(), "witness1".into()],
+                )
+                .unwrap_err()
+        );
+        builder
+            .add_group("group2".into(), 1, vec!["witness2".into()])
+            .unwrap();
+
+        builder
+            .add_group("parent1".into(), 1, vec!["group1".into()])
+            .unwrap();
+        assert_eq!(
+            PolicyError::GroupMemberAlreadyUsed {
+                member: "group1".into(),
+                group: "parent1".into(),
+            },
+            builder
+                .add_group("parent2".into(), 2, vec!["group2".into(), "group1".into()])
+                .unwrap_err()
+        );
+        builder
+            .add_group("parent2".into(), 1, vec!["group2".into()])
+            .unwrap();
     }
 
     #[test]

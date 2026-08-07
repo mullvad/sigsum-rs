@@ -330,6 +330,10 @@ mod tests {
             parse_policy("witness foo fd07e34679d68f7042f0d2d3d21e956abdd0b56b1abc3d659b2b51f8e40a113e https://log.io/ xxx").unwrap_err(),
             @"line 1: invalid witness rule: expected 2 or 3 arguments, got 4",
         );
+        insta::assert_snapshot!(
+            parse_policy("witness none acf9f514e85ba44ebf00faf1bc36a16c42f2915c7b2728b489223fdcf3f2b6e3").unwrap_err(),
+            @"line 1: invalid witness rule: duplicate name",
+        );
     }
 
     #[test]
@@ -337,6 +341,29 @@ mod tests {
         insta::assert_snapshot!(
             parse_policy("group foo any").unwrap_err(),
             @"line 1: invalid group rule: expected at least 3 arguments, got 2",
+        );
+        insta::assert_snapshot!(
+            parse_policy("\
+                witness WIT-1 acf9f514e85ba44ebf00faf1bc36a16c42f2915c7b2728b489223fdcf3f2b6e3\n\
+                group GRP 0 WIT-1\n\
+                quorum GRP\n\
+            ").unwrap_err(),
+            @"line 2: invalid group rule: invalid group threshold 0 for 1 members",
+        );
+        insta::assert_snapshot!(
+            parse_policy("\
+                witness WIT-1 acf9f514e85ba44ebf00faf1bc36a16c42f2915c7b2728b489223fdcf3f2b6e3\n\
+                group GRP 2 WIT-1\n\
+                quorum GRP\n\
+            ").unwrap_err(),
+            @"line 2: invalid group rule: invalid group threshold 2 for 1 members",
+        );
+        insta::assert_snapshot!(
+            parse_policy("\
+                group GRP 1 none\n\
+                quorum GRP\n\
+            ").unwrap_err(),
+            @"line 1: invalid group rule: none: no such witness",
         );
     }
 
@@ -372,5 +399,25 @@ mod tests {
     #[test]
     fn parse_policy_unknown_keyword() {
         insta::assert_snapshot!(parse_policy("foo bar").unwrap_err(), @"line 1: unknown keyword `foo`")
+    }
+
+    #[test]
+    fn parse_policy_rejects_reused_group_member() {
+        insta::assert_snapshot!(parse_policy("\
+                witness WIT-1 acf9f514e85ba44ebf00faf1bc36a16c42f2915c7b2728b489223fdcf3f2b6e3\n\
+                group GRP 2 WIT-1 WIT-1\n\
+                quorum GRP\n\
+                ")
+        .unwrap_err(), @"line 2: invalid group rule: group/witness `WIT-1` is already a member of `GRP`");
+
+        insta::assert_snapshot!(parse_policy("\
+                witness WIT-1 acf9f514e85ba44ebf00faf1bc36a16c42f2915c7b2728b489223fdcf3f2b6e3\n\
+                witness WIT-2 df329030f76b3616f1c50f3f8ae7ce6cf3fa92905ab7ce47bbc8be71226b65c9\n\
+                witness WIT-3 ec5681da2b676ab81df2daea3254cd8c4a5149318a62ae3bec6b4e80504b3b24\n\
+                group GRP-1 2 WIT-1 WIT-2\n\
+                group GRP-2 2 WIT-3 WIT-2\n\
+                quorum GRP-2\n\
+                ")
+        .unwrap_err(), @"line 5: invalid group rule: group/witness `WIT-2` is already a member of `GRP-1`");
     }
 }
