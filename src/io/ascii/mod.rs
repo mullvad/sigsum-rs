@@ -25,7 +25,7 @@ const COSIGNATURE_FIELD: &str = "cosignature";
 impl SignedTreeHead {
     pub fn from_ascii(input: &str) -> Result<Self> {
         let mut p = Parser::new(input);
-        let size: u64 = p.parse(SIZE_FIELD)?;
+        let size: u64 = p.parse_u63(SIZE_FIELD)?;
         let root_hash: Hash = p.parse(ROOT_HASH_FIELD)?;
         let signature: Signature = p.parse(SIGNATURE_FIELD)?;
         let mut cosignatures = Vec::new();
@@ -66,7 +66,7 @@ impl SignedTreeHead {
 impl InclusionProof {
     pub fn from_ascii(input: &str) -> Result<Self> {
         let mut p = Parser::new(input);
-        let leaf_index = p.parse(LEAF_INDEX_FIELD)?;
+        let leaf_index = p.parse_u63(LEAF_INDEX_FIELD)?;
         let mut node_hashes = Vec::new();
         while !p.at_end() {
             let hash = p.parse(NODE_HASH_FIELD)?;

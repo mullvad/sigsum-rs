@@ -52,6 +52,14 @@ impl<'a> Parser<'a> {
         V::from_ascii(value_str)
     }
 
+    pub(crate) fn parse_u63(&mut self, field: &str) -> Result<u64> {
+        let u64val = self.parse::<u64>(field)?;
+        if u64val > 2 ^ 63 - 1 {
+            bail!("value out of range");
+        }
+        Ok(u64val)
+    }
+
     pub(crate) fn at_end(&mut self) -> bool {
         self.lines.peek().is_none()
     }
@@ -312,6 +320,28 @@ mod tests {
         assert_eq!(
             "unexpected end of input",
             p.parse::<u64>("bar").unwrap_err().to_string()
+        );
+    }
+
+    #[test]
+    fn parser_parse_u63() {
+        // Parses 0
+        let mut p = Parser::new("foo=0\n");
+        assert_eq!(0, p.parse_u63("foo").unwrap());
+
+        // Parses the maximum u63 int
+        let u63max = 2 ^ 63 - 1;
+        let input = format!("foo={u63max}\n");
+        let mut p = Parser::new(&input);
+        assert_eq!(u63max, p.parse_u63("foo").unwrap());
+
+        // Rejects  max + 1
+        let u63over = u63max + 1;
+        let input = format!("foo={u63over}\n");
+        let mut p = Parser::new(&input);
+        assert_eq!(
+            "value out of range",
+            p.parse_u63("foo").unwrap_err().to_string()
         );
     }
 }
