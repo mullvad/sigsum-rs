@@ -7,16 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-30
+
+### Changed
+
+- Added `no_std` support (with `alloc`). **Breaking:** `Policy::builtin` now
+  returns an owned `Option<Policy>` instead of `Option<&'static Policy>`.
+- Declare a minimum supported Rust version (MSRV) of 1.88 via `rust-version`
+  in `Cargo.toml`. Previous releases did not declare an MSRV and built on
+  Rust 1.85 or later; the increase is required by `sha2` 0.11.1.
+- Upgrade internal dependencies: `ed25519-dalek` 3.0, `sha2` 0.11, `base16ct` 1.0.
+  None of these types are exposed in the public API.
+
 ### Fixed
 
-- Reject policies that use the reserved `none` name, reuse quorum members, or use invalid group thresholds.
+- Reject policies that use the reserved `none` name, reuse quorum members, or
+  use invalid group thresholds.
 - Correctly parse and generate two-parts signatures for size-1 trees
 
 ## [0.3.0] - 2026-02-09
+
 ### Changed
 
-- Remove panic from `PublicKey::verify_signature`. Instead return `false` if key does not
-  parse.
+- Remove panic from `PublicKey::verify_signature`. Instead return `false` if
+  key does not parse.
 - The library documentation now shows the source of the built-in policies.
 
 
@@ -30,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   valid `Policy` values.
 - The crates now ships with the `sigsum-generic-2025-1` policy as well as three
   test policies (same policies that are built into the reference Sigsum
-  tooling).
+tooling).
 
 ### Removed
 
