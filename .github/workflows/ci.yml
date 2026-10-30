@@ -70,3 +70,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo +nightly update --verbose -Z minimal-versions
       - run: cargo +stable build --locked
+
+  no_std:
+    name: Check no_std build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo check --no-default-features
