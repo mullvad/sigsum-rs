@@ -6,7 +6,6 @@ description = """
 A Rust library for using Sigsum transparency logs.
 """
 documentation = "https://docs.rs/sigsum"
-homepage = "https://github.com/mullvad/sigsum-rs"
 repository = "https://github.com/mullvad/sigsum-rs"
 license = "MIT"
 
